@@ -2,7 +2,7 @@
 
 ## Introduction
 
-
+This is the backend server for the CS407 Final Project. For detailed project information, please refer to our [Project Proposal](./CS407_Project_Proposal.pdf).
 
 ## Development Setup
 
@@ -91,7 +91,7 @@ docker-compose logs mysql
 docker-compose restart mysql
 ```
 
-### Project Structure
+### Current Project Structure
 
 ```
 knot_server/
