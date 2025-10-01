@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.knot_server.controller.auth.dto.ApiResponse;
+import com.example.knot_server.controller.auth.dto.LogoutRequest;
+import com.example.knot_server.controller.auth.dto.RefreshTokenRequest;
 import com.example.knot_server.controller.auth.dto.RegisterORLoginRequest;
 import com.example.knot_server.controller.auth.dto.RegisterResponse;
 import com.example.knot_server.controller.auth.dto.TokenResponse;
@@ -51,8 +53,8 @@ public class AuthController {
 
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody String username) {
-        boolean result = authService.logout(username);
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
+        boolean result = authService.logout(request.getUsername());
         if (!result) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     ApiResponse.error("用户未登录或不存在"));
@@ -62,7 +64,9 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@RequestBody String rt) {
+    public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@RequestBody RefreshTokenRequest body) {
+        String rt = body == null ? null : body.getRt();
+        if (rt != null) rt = rt.trim();
         TokenResponse response = authService.refreshToken(rt);
         if (response.getError() != null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(

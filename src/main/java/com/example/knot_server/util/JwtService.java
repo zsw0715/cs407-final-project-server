@@ -92,7 +92,12 @@ public class JwtService {
      * @throws JwtException 如果令牌无效或过期
      */
     public Jws<Claims> parse(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+        // 允许少量时钟偏移，避免刚颁发就被认为过期
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .setAllowedClockSkewSeconds(60) // 60s 容忍度
+                .build()
+                .parseClaimsJws(token);
     } 
     
 }

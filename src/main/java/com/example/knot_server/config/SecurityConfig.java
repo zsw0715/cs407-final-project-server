@@ -35,8 +35,9 @@ public class SecurityConfig {
 
             // 路由放行规则
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/test/**", "/error").permitAll() // 允许注册/登录/刷新与测试接口、错误页
-                .anyRequest().authenticated()                                   // 其他接口需要鉴权（后续用JWT）
+                // 注意：Controller 前缀为 /api/auth/**
+                .requestMatchers("/api/auth/**", "/test/**", "/error").permitAll() // 允许注册/登录/刷新与测试接口、错误页
+                .anyRequest().authenticated()                                          // 其他接口需要鉴权（后续用JWT）
             )
 
             // 关掉所有Web登录相关入口，避免重定向到登录页
@@ -53,6 +54,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // 这个3000是给 还没 kotlin 的时候使用 web 前端访问用的端口
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));

@@ -54,6 +54,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
+        // 放行 CORS 预检请求
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // 如果没有 Authorization 头，直接返回 401（未授权）
         String h = request.getHeader("Authorization");
         if (h == null || !h.startsWith("Bearer ")) {
@@ -88,7 +93,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest req) {
         String path = req.getRequestURI();
-        return path.startsWith("/auth/") || path.startsWith("/test/");
+        // 与 SecurityConfig 中的放行路径保持一致
+        return path.startsWith("/api/auth/") || path.startsWith("/test/");
     }
 
 }

@@ -19,7 +19,9 @@ import com.example.knot_server.service.AuthService;
 import com.example.knot_server.util.JwtService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -44,7 +46,8 @@ public class AuthServiceImpl implements AuthService {
         newUser.setUsername(username);
         newUser.setPasswordHash(passwordEncoder.encode(password));
         newUser.setNickname(username);
-        newUser.setAccountStatus("active");
+        // 与登录校验一致，使用大写 ACTIVE
+        newUser.setAccountStatus("ACTIVE");
         newUser.setDiscoverable(true);
         newUser.setPrivacyLevel("public");
         newUser.setCreatedAt(LocalDateTime.now());
@@ -61,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         if (u == null || !passwordEncoder.matches(password, u.getPasswordHash())) {
             return new TokenResponse("用户名或密码错误");
         }
-        if (!"active".equals(u.getAccountStatus())) {
+        if (!"ACTIVE".equals(u.getAccountStatus())) {
             return new TokenResponse("用户账户被封禁");
         }
 
@@ -94,6 +97,7 @@ public class AuthServiceImpl implements AuthService {
     public boolean logout(String username) {
         User u = userMapper.selectOne(new LambdaQueryWrapper<User>()
                 .eq(User::getUsername, username));
+        // log.debug("Logging out user: {}", username);
         if (u == null) {
             return false;
         }
