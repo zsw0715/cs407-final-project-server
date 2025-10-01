@@ -36,7 +36,7 @@ public class AuthController {
                     ApiResponse.error(response.getError()));
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success("User registered successfully", response));
+                ApiResponse.success("用户注册成功", response));
     }
 
 
@@ -48,7 +48,7 @@ public class AuthController {
                     ApiResponse.error(response.getError()));
         }
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.success("User logged in successfully", response));
+                ApiResponse.success("用户登录成功", response));
     }
 
 
@@ -60,7 +60,7 @@ public class AuthController {
                     ApiResponse.error("用户未登录或不存在"));
         }
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.success("User logged out successfully", null));
+                ApiResponse.success("用户登出成功", null));
     }
 
     @PostMapping("/refresh-token")
@@ -73,7 +73,7 @@ public class AuthController {
                     ApiResponse.error(response.getError()));
         }
         return ResponseEntity.status(HttpStatus.OK).body(
-                ApiResponse.success("Token refreshed successfully", response));
+                ApiResponse.success("刷新令牌成功（使用 Refresh Token " + rt + " 更换新的 Access Token）", response));
     }
 }
 
