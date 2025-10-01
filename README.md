@@ -42,6 +42,7 @@ This is the backend server for the CS407 Final Project. For detailed project inf
 ### Service Ports
 
 - **Spring Boot Application**: http://localhost:8080
+- **Netty WebSocket**: localhost:10827
 - **MySQL Database**: localhost:3306
 - **Redis Cache**: localhost:6379
 

@@ -7,15 +7,22 @@ public class TokenResponse {
     private String accessToken;
     private String refreshToken;
     private String tokenType = "Bearer";
-    private long expiresIn;
     private Long userId;
     private String username;
+    private String error;  // 用于存储错误信息
 
-    public TokenResponse(String accessToken, String refreshToken, long expiresIn, Long userId, String username) {
+    public TokenResponse() {
+    }
+
+    public TokenResponse(String accessToken, String refreshToken, Long userId, String username) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.expiresIn = expiresIn;
         this.userId = userId;
         this.username = username;
     }
+
+    public TokenResponse(String error) {
+        this.error = error;
+    }
+
 }

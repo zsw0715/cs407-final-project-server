@@ -30,6 +30,4 @@ app:
         access-minutes: 60
         refresh-days: 14
     netty:
-        port: 18080
-
-    
+        port: 10827

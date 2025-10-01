@@ -4,9 +4,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.knot_server.controller.auth.dto.ApiResponse;
-import com.example.knot_server.controller.auth.dto.RegisterRequest;
+import com.example.knot_server.controller.auth.dto.RegisterORLoginRequest;
+import com.example.knot_server.controller.auth.dto.RegisterResponse;
 import com.example.knot_server.controller.auth.dto.TokenResponse;
-import com.example.knot_server.entity.User;
+import com.example.knot_server.service.AuthService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,54 +20,56 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<TokenResponse>> register(@RequestBody RegisterRequest request) {
-        // Placeholder implementation
-        TokenResponse tokenResponse = new TokenResponse(
-            "dummy-access-token",
-            "dummy-refresh-token", 
-            3600L,
-            1L,
-            request.getUsername()
-        );
-        
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@RequestBody RegisterORLoginRequest request) {
+        RegisterResponse response = authService.register(request.getUsername(), request.getPassword());
+        if (response.getError() != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error(response.getError()));
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.success("User registered successfully", tokenResponse));
+                ApiResponse.success("User registered successfully", response));
     }
+
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody RegisterRequest request) {
-        // Placeholder implementation
-        TokenResponse tokenResponse = new TokenResponse(
-            "dummy-access-token",
-            "dummy-refresh-token", 
-            3600L,
-            1L,
-            request.getUsername()
-        );
-        
-        return ResponseEntity.ok(ApiResponse.success("User logged in successfully", tokenResponse));
+    public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody RegisterORLoginRequest request) {
+        TokenResponse response = authService.login(request.getUsername(), request.getPassword());
+        if (response.getError() != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error(response.getError()));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success("User logged in successfully", response));
     }
 
+
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout() {
-        // Placeholder implementation
-        return ResponseEntity.ok(ApiResponse.success("User logged out successfully", null));
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody String username) {
+        boolean result = authService.logout(username);
+        if (!result) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error("用户未登录或不存在"));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success("User logged out successfully", null));
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@RequestBody TokenResponse tokenResponse) {
-        // Placeholder implementation
-        TokenResponse newTokenResponse = new TokenResponse(
-            "new-dummy-access-token",
-            "new-dummy-refresh-token",
-            3600L,
-            1L,
-            "dummy-username"
-        );
-
-        return ResponseEntity.ok(ApiResponse.success("Token refreshed successfully", newTokenResponse));
+    public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(@RequestBody String rt) {
+        TokenResponse response = authService.refreshToken(rt);
+        if (response.getError() != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                    ApiResponse.error(response.getError()));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success("Token refreshed successfully", response));
     }
 }
 
