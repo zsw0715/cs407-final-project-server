@@ -1,0 +1,35 @@
+spring:
+    datasource:
+        username: root
+        password: 
+        url: jdbc:mysql://localhost:3306/cs407_final_project?serverTimezone=Asia/Shanghai&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    flyway:
+        enabled: true
+        locations: classpath:db/migration
+        baseline-on-migrate: true
+        encoding: UTF-8
+        table: flyway_schema_history
+    data:
+        redis:
+            port: 6379
+            password:
+            database: 0
+            timeout: 5000ms
+
+mybatis-plus:
+    global-config:
+        db-config:
+            id-type: auto
+    configuration:
+        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+app:
+    jwt:
+        secret: "7Phb6J1+R9nPZ1Gd4S7zPkbGQfBzg3ZPQmGq7qzW2t4="
+        access-minutes: 60
+        refresh-days: 14
+    netty:
+        port: 18080
+
+    

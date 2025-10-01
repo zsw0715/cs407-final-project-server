@@ -1,0 +1,22 @@
+{"properties": [
+  {
+    "name": "app.jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'app.jwt.secret'"
+  },
+  {
+    "name": "app.jwt.access-minutes",
+    "type": "java.lang.String",
+    "description": "A description for 'app.jwt.access-minutes'"
+  },
+  {
+    "name": "app.jwt.refresh-days",
+    "type": "java.lang.String",
+    "description": "A description for 'app.jwt.refresh-days'"
+  },
+  {
+    "name": "app.netty.port",
+    "type": "java.lang.String",
+    "description": "A description for 'app.netty.port'"
+  }
+]}
