@@ -15,7 +15,10 @@ For detailed project information, please refer to our [Project Proposal](./CS407
 - Docker and Docker Compose
 - Java 17
 - Maven
-- (Optional) [wscat](https://github.com/websockets/wscat) for testing WebSocket connections
+- [Apidog](https://apidog.com/) for testing api
+- [wscat](https://github.com/websockets/wscat) for testing WebSocket connections
+- [Another Redis Desktop Manager](https://goanother.com/cn/) redis
+- [dbeaver](https://dbeaver.io/) database manager
 
 ### Getting Started
 
