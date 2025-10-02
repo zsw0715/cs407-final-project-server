@@ -125,7 +125,7 @@
             color: var(--cyan)
         }
 
-        /* 关键修改：让超长 token 也能自动换行，并禁用横向滚动 */
+        /* 日志自动换行且无横向滚动 */
         #log {
             background: #05080c;
             border: 1px solid #0f1822;
@@ -136,11 +136,8 @@
             overflow-y: auto;
             overflow-x: hidden;
             white-space: pre-wrap;
-            /* 保留换行，同时能换行 */
             word-break: break-word;
-            /* 遇到超长连续字符串也能断开 */
             overflow-wrap: anywhere;
-            /* 现代浏览器更激进地换行 */
         }
 
         .muted {
@@ -177,7 +174,7 @@
         <div class="row">
             <h1>Knot Debug – Login & WebSocket</h1>
             <span class="badge">UID: <b id="bUid" class="info">unknown</b></span>
-            <span class="badge">WS: <b id="bWs" class="err">disconnected</b></span>
+            <span class="badge">WS: <b id="bWs" class="err">closed</b></span>
             <span class="badge">Heartbeat: <b id="bHb" class="warn">off</b></span>
         </div>
 
@@ -218,7 +215,7 @@
                     </div>
                     <div class="col">
                         <div class="muted">流程：登录 → 连接 WS → 发送 <span class="mono">{"type":"AUTH"}</span> → 收到 <span
-                                class="mono">AUTH_OK</span> 后开始心跳。</div>
+                                class="mono">AUTH_OK</span> 后开始心跳。刷新页面会优先使用 RT 自动续期。</div>
                     </div>
                 </div>
             </div>
@@ -246,17 +243,45 @@
     </div>
 
     <script>
-        // ===== 状态 =====
-        let AT = null, UID = null, ws = null, hbTimer = null, hbRemain = 0;
+        /* ==========================
+         * 状态 & 本地存储
+         * ========================== */
+        let AT = null, RT = null, UID = null, ws = null, hbTimer = null, hbRemain = 0;
 
-        // ===== 工具函数 =====
+        const storeKey = 'knot_auth';
+        const storage = {
+            save: (obj) => localStorage.setItem(storeKey, JSON.stringify(obj || {})),
+            load: () => { try { return JSON.parse(localStorage.getItem(storeKey) || '{}') } catch { return {} } },
+            clear: () => localStorage.removeItem(storeKey),
+        };
+
+        /* ==========================
+         * 工具函数
+         * ========================== */
         const $ = id => document.getElementById(id);
         const pad = n => (n < 10 ? '0' : '') + n;
         const nowStr = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
         const log = (line, cls = '') => { $('log').innerHTML += `<div class="${cls}">[${nowStr()}] ${line}</div>`; $('log').scrollTop = $('log').scrollHeight; };
         const setBadge = (id, text, cls) => { const el = $(id); el.textContent = text; el.classList.remove('ok', 'err', 'warn', 'info'); if (cls) el.classList.add(cls); };
 
-        // ===== 心跳控制：只在 AUTH_OK 后启动 =====
+        // 解析 JWT 的 exp（毫秒）
+        const jwtExpMs = (token) => {
+            try {
+                const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+                const json = JSON.parse(atob(b64));
+                return (json.exp || 0) * 1000;
+            } catch { return 0; }
+        };
+        const isExpired = (token) => {
+            if (!token) return true;
+            const exp = jwtExpMs(token);
+            // 提前 5 秒判定过期，避免边界抖动
+            return Date.now() >= (exp - 5000);
+        };
+
+        /* ==========================
+         * 心跳：仅在 AUTH_OK 后开启
+         * ========================== */
         const startHeartbeat = (sec = 30) => {
             stopHeartbeat();
             hbRemain = sec; setBadge('bHb', `${hbRemain}s`, 'ok');
@@ -271,7 +296,9 @@
         };
         const stopHeartbeat = () => { if (hbTimer) clearInterval(hbTimer); hbTimer = null; setBadge('bHb', 'off', 'warn'); };
 
-        // ===== WS 封装 =====
+        /* ==========================
+         * WS 封装
+         * ========================== */
         const sendWs = obj => {
             if (!ws || ws.readyState !== 1) { log('WS 未连接，无法发送', 'warn'); return; }
             const s = JSON.stringify(obj);
@@ -283,8 +310,7 @@
             ws = new WebSocket(url);
             ws.onopen = () => {
                 setBadge('bWs', 'connected', 'ok'); log('WS connected');
-                if (AT) { sendWs({ type: 'AUTH', token: AT }); }  // 连接后立即尝试 AUTH
-                // 注意：此处不启动心跳，等待 AUTH_OK 后再启动
+                if (AT && !isExpired(AT)) { sendWs({ type: 'AUTH', token: AT }); }
             };
             ws.onclose = e => { setBadge('bWs', 'closed', 'err'); stopHeartbeat(); log(`WS closed code=${e.code} ${e.reason || ''}`, 'warn'); };
             ws.onerror = () => log('WS error', 'err');
@@ -294,7 +320,9 @@
                     const d = JSON.parse(ev.data);
                     if (d.type === 'AUTH_OK') {
                         UID = d.uid; setBadge('bUid', String(UID), 'info');
-                        startHeartbeat(parseInt($('hbSec').value || 30, 10));  // ✅ 认证完成后开始心跳
+                        startHeartbeat(parseInt($('hbSec').value || 30, 10));
+                        // 保存 UID（若之前没有）
+                        const saved = storage.load(); storage.save({ ...saved, uid: UID });
                     }
                     if (d.type === 'HEARTBEAT_ACK' && typeof d.remain !== 'undefined') {
                         log(`HEARTBEAT_ACK remain=${d.remain}s ttl=${d.ttl} serverTs=${d.serverTs}`);
@@ -303,16 +331,62 @@
             };
         };
 
-        // ===== HTTP 辅助 =====
-        const postJSON = async (url, body, withAuth = false) => {
-            const headers = { 'Content-Type': 'application/json' };
-            if (withAuth && AT) headers['Authorization'] = 'Bearer ' + AT;
-            const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-            if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} ${r.statusText} - ${t}`); }
-            const txt = await r.text(); try { return JSON.parse(txt); } catch { return txt; }
+        /* ==========================
+         * HTTP 封装（带一次自动刷新）
+         * ========================== */
+        const doPost = async (url, body, headers) => {
+            const r = await fetch(url, { method: 'POST', headers, body: body != null ? JSON.stringify(body) : null });
+            const txt = await r.text();
+            return { ok: r.ok, status: r.status, text: txt };
         };
 
-        // ===== 事件：注册/登录/登出/原始发送 =====
+        // withAuth=false：普通请求；true：携带 AT，若 401/AT 过期，会尝试用 RT 刷新一次并重试
+        const postJSON = async (url, body, withAuth = false) => {
+            let headers = { 'Content-Type': 'application/json' };
+            if (withAuth && AT) headers['Authorization'] = 'Bearer ' + AT;
+
+            // 若 withAuth 且 AT 已过期，先尝试刷新
+            if (withAuth && (!AT || isExpired(AT))) {
+                const ok = await tryRefresh();
+                if (ok) headers['Authorization'] = 'Bearer ' + AT;
+            }
+
+            let res = await doPost(url, body, headers);
+            if (!res.ok && withAuth && res.status === 401) {
+                const ok = await tryRefresh();
+                if (ok) {
+                    headers['Authorization'] = 'Bearer ' + AT;
+                    res = await doPost(url, body, headers);
+                }
+            }
+            if (!res.ok) throw new Error(`${res.status} ${res.text}`);
+            try { return JSON.parse(res.text); } catch { return res.text; }
+        };
+
+        // 调用 /api/auth/refresh 刷新 AT
+        const tryRefresh = async () => {
+            const saved = storage.load();
+            const refreshToken = saved.rt || RT;
+            if (!refreshToken) { log('没有 RT 可用于刷新', 'warn'); return false; }
+            try {
+                const resp = await postJSON($('restUrl').value + '/api/auth/refresh', { refreshToken }, false);
+                const d = resp.data ? resp.data : resp;
+                AT = d.accessToken || d.access_token || d.token || null;
+                RT = d.refreshToken || d.rt || refreshToken;
+                UID = d.userId ?? d.uid ?? UID;
+                storage.save({ at: AT, rt: RT, uid: UID, username: saved.username });
+                log('REFRESH OK');
+                return !!AT;
+            } catch (e) {
+                log('REFRESH ERR ' + e.message, 'err');
+                storage.clear();
+                return false;
+            }
+        };
+
+        /* ==========================
+         * 事件：注册 / 登录 / 登出 / 发送
+         * ========================== */
         $('btnReg').onclick = async () => {
             try {
                 const res = await postJSON($('restUrl').value + '/api/auth/register',
@@ -325,48 +399,71 @@
             try {
                 const resp = await postJSON($('restUrl').value + '/api/auth/login',
                     { username: $('username').value, password: $('password').value });
-
-                // 兼容你的响应结构（token 在 data 里）以及其他可能的命名
                 const d = (resp && resp.data) ? resp.data : resp;
-                AT = d.accessToken || d.access_token || d.token || d.at || null;
+                AT = d.accessToken || d.access_token || d.token || null;
+                RT = d.refreshToken || d.rt || null;
                 UID = d.userId ?? d.uid ?? null;
-
+                storage.save({ at: AT, rt: RT, uid: UID, username: $('username').value });
                 log('LOGIN OK ' + JSON.stringify(resp));
                 if (!AT) { log('没有拿到 access token，无法 AUTH', 'err'); return; }
-
-                // 已连接就发 AUTH，否则先连
                 if (ws && ws.readyState === 1) sendWs({ type: 'AUTH', token: AT });
                 else openWs($('wsUrl').value.trim());
             } catch (e) { log('LOGIN ERR ' + e.message, 'err'); }
         };
 
+        // 你当前后端的登出实现：HTTP body 传 username，无需 Authorization
         $('btnLogout').onclick = async () => {
             const base = $('restUrl').value.trim();
 
-            // 1) WS 先下线
+            // 1) WS 先下线（清 channel/online）
             try { sendWs({ type: 'LOGOUT' }); log('WS LOGOUT sent'); } catch { }
 
-            await new Promise(r => setTimeout(r, 100)); // 小等待，避免竞态
+            await new Promise(r => setTimeout(r, 120)); // 避免竞态
 
-            // 2) HTTP logout（按你当前后端实现：body 里传 username，不带 Authorization）
+            // 2) HTTP logout（传 username；如果以后改成带 Authorization，换成 postJSON(base+'/api/auth/logout', {}, true) 即可）
             try {
-                const res = await postJSON(base + '/api/auth/logout', { username: $('username').value }, /*withAuth=*/false);
+                const res = await postJSON(base + '/api/auth/logout', { username: $('username').value }, false);
                 log('HTTP LOGOUT OK ' + JSON.stringify(res));
-            } catch (e) {
-                log('HTTP LOGOUT ERR ' + e.message, 'err');
-            }
+            } catch (e) { log('HTTP LOGOUT ERR ' + e.message, 'err'); }
 
             if (ws) ws.close(1000, 'Bye');
-            AT = null; UID = null; setBadge('bUid', 'unknown', 'info'); stopHeartbeat();
+            AT = null; RT = null; UID = null; storage.clear();
+            setBadge('bUid', 'unknown', 'info'); stopHeartbeat();
         };
 
         $('btnSendRaw').onclick = () => {
             const t = $('raw').value.trim(); if (!t) return;
             try { sendWs(JSON.parse(t)); } catch { log('不是合法 JSON', 'err'); }
         };
-
         $('btnCloseWs').onclick = () => { if (ws) ws.close(1000, 'manual'); };
         $('btnClearLog').onclick = () => { $('log').innerHTML = ''; };
+
+        /* ==========================
+         * 页面加载：自动恢复登录 & 自动连 WS
+         * ========================== */
+        (async function boot() {
+            const saved = storage.load();
+            if (saved.username) $('username').value = saved.username;
+
+            if (saved.at) AT = saved.at;
+            if (saved.rt) RT = saved.rt;
+            if (saved.uid) { UID = saved.uid; setBadge('bUid', String(UID), 'info'); }
+
+            // 若 AT 过期则用 RT 刷新；成功则自动连 WS
+            if (AT && !isExpired(AT)) {
+                log('已从本地恢复 AT，未过期，自动连接 WS');
+                openWs($('wsUrl').value.trim());
+            } else if (RT) {
+                log('AT 过期，尝试使用 RT 自动刷新…');
+                const ok = await tryRefresh();
+                if (ok) {
+                    setBadge('bUid', UID ? String(UID) : 'unknown', 'info');
+                    openWs($('wsUrl').value.trim());
+                } else {
+                    log('自动刷新失败，请重新登录', 'warn');
+                }
+            }
+        })();
     </script>
 </body>
 
