@@ -16,10 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class NettyServer implements CommandLineRunner {
 
+    private final NettyServerInitializer initializer;
+
     @Value("${app.netty.port}")
     private int port;
 
-    public NettyServer() {
+    public NettyServer(NettyServerInitializer initializer) {
+        this.initializer = initializer;
     }
 
     @Override
@@ -35,7 +38,7 @@ public class NettyServer implements CommandLineRunner {
                     .channel(NioServerSocketChannel.class)
                     .childOption(ChannelOption.TCP_NODELAY, true)
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childHandler(new NettyServerInitializer());
+                    .childHandler(initializer);
             ChannelFuture f = b.bind(port).sync();
             
             System.out.println("Netty WebSocket Server started successfully!");
