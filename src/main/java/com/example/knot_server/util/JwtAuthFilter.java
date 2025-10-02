@@ -94,7 +94,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(@NonNull HttpServletRequest req) {
         String path = req.getRequestURI();
         // 与 SecurityConfig 中的放行路径保持一致
-        return path.startsWith("/api/auth/") || path.startsWith("/test/");
+        return path.startsWith("/api/auth/") || path.startsWith("/test/") || path.startsWith("/client/") || path.startsWith("/static/");
     }
 
 }

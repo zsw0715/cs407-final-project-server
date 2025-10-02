@@ -36,7 +36,7 @@ public class SecurityConfig {
             // 路由放行规则
             .authorizeHttpRequests(auth -> auth
                 // 注意：Controller 前缀为 /api/auth/**
-                .requestMatchers("/api/auth/**", "/test/**", "/error").permitAll() // 允许注册/登录/刷新与测试接口、错误页
+                .requestMatchers("/api/auth/**", "/test/**", "/error", "/client/**", "/static/**").permitAll()
                 .anyRequest().authenticated()                                          // 其他接口需要鉴权（后续用JWT）
             )
 

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Knot Debug – Login & WS</title>
+    <style>
+        :root {
+            --bg: #0b0f14;
+            --panel: #121821;
+            --muted: #8aa1b4;
+            --text: #e5eef7;
+            --green: #22c55e;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --cyan: #22d3ee;
+            --border: #1f2a37;
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+
+        .wrap {
+            max-width: 980px;
+            margin: 28px auto;
+            padding: 0 16px;
+        }
+
+        h1 {
+            margin: 0 0 14px;
+            font-size: 20px;
+            color: #cfe3ff
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+        }
+
+        .col {
+            flex: 1
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted);
+            display: block;
+            margin: 6px 0
+        }
+
+        input {
+            background: #0f1520;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 10px;
+            width: 100%;
+            box-sizing: border-box
+        }
+
+        button {
+            background: #172230;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer
+        }
+
+        button.primary {
+            background: #1b2b3d;
+            border-color: #213247
+        }
+
+        button:disabled {
+            opacity: .5;
+            cursor: not-allowed
+        }
+
+        .badge {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            border: 1px solid var(--border);
+            background: #0f1520;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .ok {
+            color: var(--green)
+        }
+
+        .err {
+            color: var(--red)
+        }
+
+        .warn {
+            color: var(--amber)
+        }
+
+        .info {
+            color: var(--cyan)
+        }
+
+        /* 关键修改：让超长 token 也能自动换行，并禁用横向滚动 */
+        #log {
+            background: #05080c;
+            border: 1px solid #0f1822;
+            border-radius: 12px;
+            padding: 12px;
+            min-height: 260px;
+            max-height: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            white-space: pre-wrap;
+            /* 保留换行，同时能换行 */
+            word-break: break-word;
+            /* 遇到超长连续字符串也能断开 */
+            overflow-wrap: anywhere;
+            /* 现代浏览器更激进地换行 */
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .stack {
+            display: grid;
+            gap: 12px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap stack">
+
+        <div class="row">
+            <h1>Knot Debug – Login & WebSocket</h1>
+            <span class="badge">UID: <b id="bUid" class="info">unknown</b></span>
+            <span class="badge">WS: <b id="bWs" class="err">disconnected</b></span>
+            <span class="badge">Heartbeat: <b id="bHb" class="warn">off</b></span>
+        </div>
+
+        <div class="grid">
+            <div class="card stack">
+                <div class="row">
+                    <div class="col">
+                        <label>REST Base URL</label>
+                        <input id="restUrl" value="http://localhost:8080">
+                    </div>
+                    <div class="col">
+                        <label>WebSocket URL</label>
+                        <input id="wsUrl" value="ws://localhost:10827/ws">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>用户名</label>
+                        <input id="username" value="admin">
+                    </div>
+                    <div class="col">
+                        <label>密码</label>
+                        <input id="password" type="password" value="123">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <button id="btnReg" class="primary">注册</button>
+                    <button id="btnLogin" class="primary">登录 + 自动WS</button>
+                    <button id="btnLogout">登出</button>
+                </div>
+
+                <div class="row">
+                    <div class="col">
+                        <label>心跳周期（秒）</label>
+                        <input id="hbSec" type="number" value="30">
+                    </div>
+                    <div class="col">
+                        <div class="muted">流程：登录 → 连接 WS → 发送 <span class="mono">{"type":"AUTH"}</span> → 收到 <span
+                                class="mono">AUTH_OK</span> 后开始心跳。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card stack">
+                <label>原始 WebSocket JSON（可选）</label>
+                <input id="raw" placeholder='例如：{"type":"LOGOUT"}'>
+                <div class="row">
+                    <button id="btnSendRaw">发送</button>
+                    <button id="btnCloseWs">关闭 WS</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="row" style="justify-content:space-between; align-items:center">
+                <div class="muted">终端日志</div>
+                <div class="row" style="gap:8px">
+                    <button id="btnClearLog">清空</button>
+                </div>
+            </div>
+            <div id="log"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ===== 状态 =====
+        let AT = null, UID = null, ws = null, hbTimer = null, hbRemain = 0;
+
+        // ===== 工具函数 =====
+        const $ = id => document.getElementById(id);
+        const pad = n => (n < 10 ? '0' : '') + n;
+        const nowStr = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+        const log = (line, cls = '') => { $('log').innerHTML += `<div class="${cls}">[${nowStr()}] ${line}</div>`; $('log').scrollTop = $('log').scrollHeight; };
+        const setBadge = (id, text, cls) => { const el = $(id); el.textContent = text; el.classList.remove('ok', 'err', 'warn', 'info'); if (cls) el.classList.add(cls); };
+
+        // ===== 心跳控制：只在 AUTH_OK 后启动 =====
+        const startHeartbeat = (sec = 30) => {
+            stopHeartbeat();
+            hbRemain = sec; setBadge('bHb', `${hbRemain}s`, 'ok');
+            hbTimer = setInterval(() => {
+                hbRemain--; setBadge('bHb', `${hbRemain}s`, hbRemain > 5 ? 'ok' : 'warn');
+                if (hbRemain <= 0) {
+                    sendWs({ type: 'HEARTBEAT' });
+                    hbRemain = parseInt($('hbSec').value || 30, 10);
+                    setBadge('bHb', `${hbRemain}s`, 'ok');
+                }
+            }, 1000);
+        };
+        const stopHeartbeat = () => { if (hbTimer) clearInterval(hbTimer); hbTimer = null; setBadge('bHb', 'off', 'warn'); };
+
+        // ===== WS 封装 =====
+        const sendWs = obj => {
+            if (!ws || ws.readyState !== 1) { log('WS 未连接，无法发送', 'warn'); return; }
+            const s = JSON.stringify(obj);
+            ws.send(s); log('>> ' + s, 'info');
+        };
+
+        const openWs = (url) => {
+            if (ws && ws.readyState === 1) return;
+            ws = new WebSocket(url);
+            ws.onopen = () => {
+                setBadge('bWs', 'connected', 'ok'); log('WS connected');
+                if (AT) { sendWs({ type: 'AUTH', token: AT }); }  // 连接后立即尝试 AUTH
+                // 注意：此处不启动心跳，等待 AUTH_OK 后再启动
+            };
+            ws.onclose = e => { setBadge('bWs', 'closed', 'err'); stopHeartbeat(); log(`WS closed code=${e.code} ${e.reason || ''}`, 'warn'); };
+            ws.onerror = () => log('WS error', 'err');
+            ws.onmessage = ev => {
+                log('<< ' + ev.data);
+                try {
+                    const d = JSON.parse(ev.data);
+                    if (d.type === 'AUTH_OK') {
+                        UID = d.uid; setBadge('bUid', String(UID), 'info');
+                        startHeartbeat(parseInt($('hbSec').value || 30, 10));  // ✅ 认证完成后开始心跳
+                    }
+                    if (d.type === 'HEARTBEAT_ACK' && typeof d.remain !== 'undefined') {
+                        log(`HEARTBEAT_ACK remain=${d.remain}s ttl=${d.ttl} serverTs=${d.serverTs}`);
+                    }
+                } catch { }
+            };
+        };
+
+        // ===== HTTP 辅助 =====
+        const postJSON = async (url, body, withAuth = false) => {
+            const headers = { 'Content-Type': 'application/json' };
+            if (withAuth && AT) headers['Authorization'] = 'Bearer ' + AT;
+            const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+            if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} ${r.statusText} - ${t}`); }
+            const txt = await r.text(); try { return JSON.parse(txt); } catch { return txt; }
+        };
+
+        // ===== 事件：注册/登录/登出/原始发送 =====
+        $('btnReg').onclick = async () => {
+            try {
+                const res = await postJSON($('restUrl').value + '/api/auth/register',
+                    { username: $('username').value, password: $('password').value });
+                log('REGISTER OK ' + JSON.stringify(res));
+            } catch (e) { log('REGISTER ERR ' + e.message, 'err'); }
+        };
+
+        $('btnLogin').onclick = async () => {
+            try {
+                const resp = await postJSON($('restUrl').value + '/api/auth/login',
+                    { username: $('username').value, password: $('password').value });
+
+                // 兼容你的响应结构（token 在 data 里）以及其他可能的命名
+                const d = (resp && resp.data) ? resp.data : resp;
+                AT = d.accessToken || d.access_token || d.token || d.at || null;
+                UID = d.userId ?? d.uid ?? null;
+
+                log('LOGIN OK ' + JSON.stringify(resp));
+                if (!AT) { log('没有拿到 access token，无法 AUTH', 'err'); return; }
+
+                // 已连接就发 AUTH，否则先连
+                if (ws && ws.readyState === 1) sendWs({ type: 'AUTH', token: AT });
+                else openWs($('wsUrl').value.trim());
+            } catch (e) { log('LOGIN ERR ' + e.message, 'err'); }
+        };
+
+        $('btnLogout').onclick = async () => {
+            const base = $('restUrl').value.trim();
+
+            // 1) WS 先下线
+            try { sendWs({ type: 'LOGOUT' }); log('WS LOGOUT sent'); } catch { }
+
+            await new Promise(r => setTimeout(r, 100)); // 小等待，避免竞态
+
+            // 2) HTTP logout（按你当前后端实现：body 里传 username，不带 Authorization）
+            try {
+                const res = await postJSON(base + '/api/auth/logout', { username: $('username').value }, /*withAuth=*/false);
+                log('HTTP LOGOUT OK ' + JSON.stringify(res));
+            } catch (e) {
+                log('HTTP LOGOUT ERR ' + e.message, 'err');
+            }
+
+            if (ws) ws.close(1000, 'Bye');
+            AT = null; UID = null; setBadge('bUid', 'unknown', 'info'); stopHeartbeat();
+        };
+
+        $('btnSendRaw').onclick = () => {
+            const t = $('raw').value.trim(); if (!t) return;
+            try { sendWs(JSON.parse(t)); } catch { log('不是合法 JSON', 'err'); }
+        };
+
+        $('btnCloseWs').onclick = () => { if (ws) ws.close(1000, 'manual'); };
+        $('btnClearLog').onclick = () => { $('log').innerHTML = ''; };
+    </script>
+</body>
+
+</html>
