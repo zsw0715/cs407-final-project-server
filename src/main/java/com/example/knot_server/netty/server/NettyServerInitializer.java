@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.knot_server.netty.server.handler.AuthHandler;
 import com.example.knot_server.netty.server.handler.CleanupHandler;
+import com.example.knot_server.netty.server.handler.LogoutHandler;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -19,10 +20,16 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final AuthHandler authHandler;
     private final CleanupHandler cleanupHandler;
+    private final LogoutHandler logoutHandler;
 
-    public NettyServerInitializer(AuthHandler authHandler, CleanupHandler cleanupHandler) {
+    public NettyServerInitializer(
+                AuthHandler authHandler, 
+                CleanupHandler cleanupHandler, 
+                LogoutHandler logoutHandler
+            ) {
         this.authHandler = authHandler;
         this.cleanupHandler = cleanupHandler;
+        this.logoutHandler = logoutHandler;
     }
 
     @Override
@@ -50,7 +57,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(new IdleStateHandler(65, 0, 0));
 
         p.addLast(authHandler);
-
+        p.addLast(logoutHandler);
         p.addLast(cleanupHandler);
 
     }

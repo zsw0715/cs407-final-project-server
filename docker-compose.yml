@@ -4,7 +4,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: knot_mysql
-    restart: always
+    restart: "no"
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: cs407_final_project
@@ -21,7 +21,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: knot_redis
-    restart: always
+    restart: "no"
     ports:
       - "6379:6379"
     volumes:
