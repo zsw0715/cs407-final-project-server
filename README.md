@@ -122,6 +122,21 @@ We use **JWT access token (AT)** obtained from the login API to authenticate Web
    - Redis `online:{uid}` is deleted.
    - Channel is closed.
 
+7. **Send HEARTBEAT message**:
+   ```json
+   {"type":"HEARTBEAT"}
+   ```
+      Expected response:
+   ```json
+   {
+   "type": "HEARTBEAT_ACK",
+   "uid": 1,
+   "remain": 79,        // 刷新前剩余秒数
+   "ttl": 90,           // 固定 TTL
+   "serverTs": 1738530000000  // 服务端毫秒时间戳
+   }
+   ```
+
 ---
 
 ## Stopping the Environment
@@ -165,13 +180,42 @@ docker-compose restart mysql
 
 ```
 knot_server/
-├── src/main/
-│   ├── java/com/example/knot_server/    # Java source code
-│   └── resources/
-│       ├── application.yml              # Application configuration
-│       └── db/migration/                # Flyway database migrations
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/knot_server/    # Java source code
+│   │   │   ├── config/                      # 应用配置类
+│   │   │   │   ├── AppBeans.java            # Bean配置
+│   │   │   │   ├── RedisScriptConfig.java   # Redis脚本配置
+│   │   │   │   ├── SecurityConfig.java      # 安全配置
+│   │   │   │   └── SwaggerConfig.java       # Swagger API文档配置
+│   │   │   ├── controller/                  # 控制器层
+│   │   │   │   ├── auth/                    # 认证相关控制器
+│   │   │   │   └── test/                    # 测试控制器
+│   │   │   ├── entity/                      # 实体类
+│   │   │   │   └── User.java                # 用户实体
+│   │   │   ├── mapper/                      # MyBatis映射器
+│   │   │   ├── netty/                       # Netty WebSocket服务器
+│   │   │   │   ├── server/                  # 服务器核心组件
+│   │   │   │   └── session/                 # 会话管理
+│   │   │   ├── service/                     # 服务层
+│   │   │   │   ├── AuthService.java         # 认证服务接口
+│   │   │   │   └── impl/                    # 服务实现类
+│   │   │   ├── util/                        # 工具类
+│   │   │   └── KnotServerApplication.java   # 应用入口类
+│   │   └── resources/
+│   │       ├── application.yml              # 应用配置文件
+│   │       ├── db/migration/                # Flyway数据库迁移脚本
+│   │       ├── static/                      # 静态资源
+│   │       ├── templates/                   # 模板文件
+│   │       └── META-INF/                    # 元数据
+│   └── test/                                # 测试代码
 ├── docker/
-│   └── mysql/init/                      # MySQL initialization scripts
-├── docker-compose.yml                   # Docker services configuration
-└── pom.xml                              # Maven dependencies
+│   └── mysql/init/                          # MySQL初始化脚本
+│       └── 01-init.sql                      # 数据库初始化SQL
+├── .mvn/                                    # Maven配置
+├── target/                                  # 编译输出目录
+├── docker-compose.yml                       # Docker服务配置
+├── pom.xml                                  # Maven项目配置
+├── mvnw                                     # Maven包装器(Unix)
+└── mvnw.cmd                                 # Maven包装器(Windows)
 ```
