@@ -45,6 +45,7 @@ For detailed project information, please refer to our [Project Proposal](./CS407
 4. **Verify everything is working**
    - Spring Boot app: http://localhost:8080
    - API documentation: http://localhost:8080/swagger-ui.html
+   - GUI API testing: http://localhost:8080/client/login.html
    - Netty WebSocket server: ws://localhost:10827/ws
 
 ---
