@@ -9,69 +9,69 @@ For detailed project information, please refer to our [Project Proposal](./CS407
 
 ---
 
-## Development Setup
+## 开发环境设置
 
-### Prerequisites
-- Docker and Docker Compose
+### 前置要求
+- Docker 和 Docker Compose
 - Java 17
 - Maven
-- [Apidog](https://apidog.com/) for testing api
-- [wscat](https://github.com/websockets/wscat) for testing WebSocket connections
-- [Another Redis Desktop Manager](https://goanother.com/cn/) redis
-- [dbeaver](https://dbeaver.io/) database manager
+- [Apidog](https://apidog.com/) 用于测试 API
+- [wscat](https://github.com/websockets/wscat) 用于测试 WebSocket 连接
+- [Another Redis Desktop Manager](https://goanother.com/cn/) Redis 客户端工具
+- [dbeaver](https://dbeaver.io/) 数据库管理工具
 
-### Getting Started
+### 开始使用
 
-1. **Clone the repository**
+1. **克隆仓库**
    ```bash
    git clone <repository-url>
    cd knot_server
    ```
 
-2. **Start the development environment**
+2. **启动开发环境**
    ```bash
-   # Start MySQL and Redis services in background
+   # 在后台启动 MySQL 和 Redis 服务
    docker-compose up -d
    
-   # Wait for services to be ready (especially MySQL on first startup)
+   # 等待服务准备就绪（特别是首次启动 MySQL 时）
    docker-compose ps
    ```
 
-3. **Start the Spring Boot application**
+3. **启动 Spring Boot 应用**
    ```bash
    mvn spring-boot:run
    ```
 
-4. **Verify everything is working**
-   - Spring Boot app: http://localhost:8080
-   - API documentation: http://localhost:8080/swagger-ui.html
-   - GUI API testing: http://localhost:8080/client/login.html
-   - Netty WebSocket server: ws://localhost:10827/ws
+4. **验证一切正常工作**
+   - Spring Boot 应用: http://localhost:8080
+   - API 文档: http://localhost:8080/swagger-ui.html
+   - GUI API 测试: http://localhost:8080/client/login.html
+   - Netty WebSocket 服务器: ws://localhost:10827/ws
 
 ---
 
-## Service Ports
+## 服务端口
 
-- **Spring Boot Application**: http://localhost:8080  
+- **Spring Boot 应用**: http://localhost:8080  
 - **Netty WebSocket**: ws://localhost:10827/ws  
-- **MySQL Database**: localhost:3306  
-- **Redis Cache**: localhost:6379  
+- **MySQL 数据库**: localhost:3306  
+- **Redis 缓存**: localhost:6379  
 
 ---
 
-## Database Information
+## 数据库信息
 
-- **Database Name**: cs407_final_project  
-- **Username**: root  
-- **Password**: (empty)  
-- **Alternative User**: app_user (also no password)  
+- **数据库名称**: cs407_final_project  
+- **用户名**: root  
+- **密码**: (空)  
+- **备用用户**: app_user (同样无密码)  
 
-You can use any MySQL client to connect:
-- **Host**: localhost  
-- **Port**: 3306  
-- **Database**: cs407_final_project  
-- **Username**: root  
-- **Password**: (leave empty)  
+您可以使用任何 MySQL 客户端连接:
+- **主机**: localhost  
+- **端口**: 3306  
+- **数据库**: cs407_final_project  
+- **用户名**: root  
+- **密码**: (留空)  
 
 ---
 
@@ -186,50 +186,50 @@ You can use any MySQL client to connect:
 
 ---
 
-## Stopping the Environment
+## 停止环境
 
 ```bash
-# Stop all services
+# 停止所有服务
 docker-compose down
 
-# Stop and remove data volumes (this will delete all data!)
+# 停止并删除数据卷（这将删除所有数据！）
 docker-compose down -v
 ```
 
 ---
 
-## Database Schema
+## 数据库架构
 
-The database schema is managed by **Flyway migrations** located in `src/main/resources/db/migration/`.  
-When the application starts, it will automatically run any pending migrations.
+数据库架构由位于 `src/main/resources/db/migration/` 的 **Flyway 迁移脚本**管理。  
+当应用启动时，它将自动运行任何待处理的迁移。
 
 ---
 
-## Troubleshooting
+## 故障排除
 
-If you encounter database connection issues:
+如果遇到数据库连接问题：
 
-1. Make sure Docker is running  
-2. Check if port 3306 is available  
-3. Wait for MySQL to fully start (first startup may take a few minutes)  
+1. 确保 Docker 正在运行  
+2. 检查端口 3306 是否可用  
+3. 等待 MySQL 完全启动（首次启动可能需要几分钟）  
 
 ```bash
-# Check MySQL container logs
+# 检查 MySQL 容器日志
 docker-compose logs mysql
 
-# Restart MySQL service
+# 重启 MySQL 服务
 docker-compose restart mysql
 ```
 
 ---
 
-## Current Project Structure
+## 当前项目结构
 
 ```
 knot_server/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/example/knot_server/                # Java source code
+│   │   ├── java/com/example/knot_server/                # Java 源代码
 │   │   │   ├── config/                                  # 应用配置类
 │   │   │   │   ├── AppBeans.java                        # Bean 配置
 │   │   │   │   ├── RedisScriptConfig.java               # Redis 脚本配置
