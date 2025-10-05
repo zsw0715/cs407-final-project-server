@@ -6,6 +6,7 @@ import com.example.knot_server.netty.server.handler.AuthHandler;
 import com.example.knot_server.netty.server.handler.CleanupHandler;
 import com.example.knot_server.netty.server.handler.HeartBeatHandler;
 import com.example.knot_server.netty.server.handler.LogoutHandler;
+import com.example.knot_server.netty.server.handler.MessageHandler;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -23,17 +24,20 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
     private final CleanupHandler cleanupHandler;
     private final LogoutHandler logoutHandler;
     private final HeartBeatHandler heartBeatHandler;
+    private final MessageHandler messageHandler;
 
     public NettyServerInitializer(
                 AuthHandler authHandler, 
                 CleanupHandler cleanupHandler, 
                 LogoutHandler logoutHandler,
-                HeartBeatHandler heartBeatHandler
+                HeartBeatHandler heartBeatHandler,
+                MessageHandler messageHandler
             ) {
         this.authHandler = authHandler;
         this.cleanupHandler = cleanupHandler;
         this.logoutHandler = logoutHandler;
         this.heartBeatHandler = heartBeatHandler;
+        this.messageHandler = messageHandler;
     }
 
     @Override
@@ -62,6 +66,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
 
         p.addLast("authHandler", authHandler);
         p.addLast("heartBeatHandler", heartBeatHandler);
+        p.addLast("messageHandler", messageHandler);
         p.addLast("logoutHandler", logoutHandler);
         p.addLast("cleanupHandler", cleanupHandler);
 

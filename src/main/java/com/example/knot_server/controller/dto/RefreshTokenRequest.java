@@ -1,4 +1,4 @@
-package com.example.knot_server.controller.auth.dto;
+package com.example.knot_server.controller.dto;
 
 import lombok.Data;
 

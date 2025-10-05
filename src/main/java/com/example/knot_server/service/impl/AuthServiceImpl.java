@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.example.knot_server.controller.auth.dto.RegisterResponse;
-import com.example.knot_server.controller.auth.dto.TokenResponse;
+import com.example.knot_server.controller.dto.RegisterResponse;
+import com.example.knot_server.controller.dto.TokenResponse;
 import com.example.knot_server.entity.User;
 import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.service.AuthService;

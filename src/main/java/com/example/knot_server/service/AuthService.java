@@ -1,7 +1,7 @@
 package com.example.knot_server.service;
 
-import com.example.knot_server.controller.auth.dto.RegisterResponse;
-import com.example.knot_server.controller.auth.dto.TokenResponse;
+import com.example.knot_server.controller.dto.RegisterResponse;
+import com.example.knot_server.controller.dto.TokenResponse;
 
 /**
  * AuthService interface for user authentication operations.

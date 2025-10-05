@@ -1,14 +1,14 @@
-package com.example.knot_server.controller.auth;
+package com.example.knot_server.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.knot_server.controller.auth.dto.ApiResponse;
-import com.example.knot_server.controller.auth.dto.LogoutRequest;
-import com.example.knot_server.controller.auth.dto.RefreshTokenRequest;
-import com.example.knot_server.controller.auth.dto.RegisterORLoginRequest;
-import com.example.knot_server.controller.auth.dto.RegisterResponse;
-import com.example.knot_server.controller.auth.dto.TokenResponse;
+import com.example.knot_server.controller.dto.ApiResponse;
+import com.example.knot_server.controller.dto.LogoutRequest;
+import com.example.knot_server.controller.dto.RefreshTokenRequest;
+import com.example.knot_server.controller.dto.RegisterORLoginRequest;
+import com.example.knot_server.controller.dto.RegisterResponse;
+import com.example.knot_server.controller.dto.TokenResponse;
 import com.example.knot_server.service.AuthService;
 
 import org.springframework.http.HttpStatus;
@@ -39,7 +39,6 @@ public class AuthController {
                 ApiResponse.success("用户注册成功", response));
     }
 
-
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(@RequestBody RegisterORLoginRequest request) {
         TokenResponse response = authService.login(request.getUsername(), request.getPassword());
@@ -50,7 +49,6 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success("用户登录成功", response));
     }
-
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
@@ -76,4 +74,3 @@ public class AuthController {
                 ApiResponse.success("刷新令牌成功（使用 Refresh Token " + rt + " 更换新的 Access Token）", response));
     }
 }
-
