@@ -229,80 +229,80 @@ docker-compose restart mysql
 knot_server/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/example/knot_server/          # Java source code
-│   │   │   ├── config/                            # 应用配置类
-│   │   │   │   ├── AppBeans.java                  # Bean 配置
-│   │   │   │   ├── RedisScriptConfig.java         # Redis 脚本配置
-│   │   │   │   ├── SecurityConfig.java            # 安全配置
-│   │   │   │   └── SwaggerConfig.java             # Swagger API 文档配置
-│   │   │   ├── controller/                        # 控制器层
-│   │   │   │   ├── AuthController.java            # 认证相关控制器
-│   │   │   │   ├── ConversationController.java    # 会话控制器
-│   │   │   │   └── test/                          # 测试控制器
-│   │   │   ├── entity/                            # 实体类
-│   │   │   │   ├── Conversation.java              # 会话实体
-│   │   │   │   ├── ConversationMember.java        # 会话成员实体
-│   │   │   │   ├── Message.java                   # 消息实体
-│   │   │   │   ├── MessageAttachment.java         # 消息附件实体
-│   │   │   │   ├── MessageReceipt.java            # 消息回执实体
-│   │   │   │   ├── SingleConvIndex.java           # 单聊索引实体
-│   │   │   │   └── User.java                      # 用户实体
-│   │   │   ├── mapper/                            # MyBatis映射器
-│   │   │   │   ├── ConversationMapper.java        # 会话映射器
-│   │   │   │   ├── ConversationMemberMapper.java  # 会话成员映射器
-│   │   │   │   ├── MessageMapper.java             # 消息映射器
-│   │   │   │   ├── MessageAttachmentMapper.java      # 消息附件映射器
-│   │   │   │   ├── MessageReceiptMapper.java         # 消息回执映射器
-│   │   │   │   ├── SingleConvIndexMapper.java        # 单聊索引映射器
-│   │   │   │   └── UserMapper.java                   # 用户映射器
-│   │   │   ├── netty/                                # Netty WebSocket服务器
-│   │   │   │   ├── server/                           # 服务器核心组件
-│   │   │   │   │   ├── NettyServer.java              # Netty 服务器
-│   │   │   │   │   ├── NettyServerInitializer.java   # 服务器初始化
-│   │   │   │   │   ├── model/                  # 服务器模型
-│   │   │   │   │   │   └── WsSendMessage.java # WebSocket 发送消息
-│   │   │   │   │   └── handler/             # 消息处理器
-│   │   │   │   │       ├── AuthHandler.java  # 认证处理
-│   │   │   │   │       ├── CleanupHandler.java # 清理处理
-│   │   │   │   │       ├── HeartBeatHandler.java # 心跳处理
-│   │   │   │   │       ├── LogoutHandler.java # 登出处理
-│   │   │   │   │       └── MessageHandler.java # 消息处理
-│   │   │   │   └── session/                 # 会话管理
-│   │   │   │       ├── ChannelAttrs.java    # 通道属性
-│   │   │   │       ├── LocalSessionRegistry.java # 本地会话注册 (之后部署会修改)
-│   │   │   │       └── SessionKeys.java     # 会话键
-│   │   │   ├── service/                     # 服务层
-│   │   │   │   ├── AuthService.java         # 认证服务接口
-│   │   │   │   ├── ConversationService.java # 会话服务接口
-│   │   │   │   ├── MessageService.java      # 消息服务接口
-│   │   │   │   ├── dto/                     # 数据传输对象
-│   │   │   │   │   └── MessageSavedView.java # 消息保存视图
-│   │   │   │   └── impl/                    # 服务实现类
-│   │   │   │       ├── AuthServiceImpl.java # 认证服务实现
-│   │   │   │       ├── ConversationServiceImpl.java # 会话服务实现
-│   │   │   │       └── MessageServiceImpl.java # 消息服务实现
-│   │   │   ├── util/                        # 工具类
-│   │   │   │   ├── JwtAuthFilter.java       # JWT认证过滤器
-│   │   │   │   └── JwtService.java          # JWT服务
-│   │   │   └── KnotServerApplication.java   # 应用入口类
+│   │   ├── java/com/example/knot_server/                # Java source code
+│   │   │   ├── config/                                  # 应用配置类
+│   │   │   │   ├── AppBeans.java                        # Bean 配置
+│   │   │   │   ├── RedisScriptConfig.java               # Redis 脚本配置
+│   │   │   │   ├── SecurityConfig.java                  # 安全配置
+│   │   │   │   └── SwaggerConfig.java                   # Swagger API 文档配置
+│   │   │   ├── controller/                              # 控制器层
+│   │   │   │   ├── AuthController.java                  # 认证相关控制器
+│   │   │   │   ├── ConversationController.java          # 会话控制器
+│   │   │   │   └── test/                                # 测试控制器
+│   │   │   ├── entity/                                  # 实体类
+│   │   │   │   ├── Conversation.java                    # 会话实体
+│   │   │   │   ├── ConversationMember.java              # 会话成员实体
+│   │   │   │   ├── Message.java                         # 消息实体
+│   │   │   │   ├── MessageAttachment.java               # 消息附件实体
+│   │   │   │   ├── MessageReceipt.java                  # 消息回执实体
+│   │   │   │   ├── SingleConvIndex.java                 # 单聊索引实体
+│   │   │   │   └── User.java                            # 用户实体
+│   │   │   ├── mapper/                                  # MyBatis映射器
+│   │   │   │   ├── ConversationMapper.java              # 会话映射器
+│   │   │   │   ├── ConversationMemberMapper.java        # 会话成员映射器
+│   │   │   │   ├── MessageMapper.java                   # 消息映射器
+│   │   │   │   ├── MessageAttachmentMapper.java         # 消息附件映射器
+│   │   │   │   ├── MessageReceiptMapper.java            # 消息回执映射器
+│   │   │   │   ├── SingleConvIndexMapper.java           # 单聊索引映射器
+│   │   │   │   └── UserMapper.java                      # 用户映射器
+│   │   │   ├── netty/                                   # Netty WebSocket服务器
+│   │   │   │   ├── server/                              # 服务器核心组件
+│   │   │   │   │   ├── NettyServer.java                 # Netty 服务器
+│   │   │   │   │   ├── NettyServerInitializer.java      # 服务器初始化
+│   │   │   │   │   ├── model/                           # 服务器模型
+│   │   │   │   │   │   └── WsSendMessage.java           # WebSocket 发送消息
+│   │   │   │   │   └── handler/                         # 消息处理器
+│   │   │   │   │       ├── AuthHandler.java             # 认证处理
+│   │   │   │   │       ├── CleanupHandler.java          # 清理处理
+│   │   │   │   │       ├── HeartBeatHandler.java        # 心跳处理
+│   │   │   │   │       ├── LogoutHandler.java           # 登出处理
+│   │   │   │   │       └── MessageHandler.java          # 消息处理
+│   │   │   │   └── session/                             # 会话管理
+│   │   │   │       ├── ChannelAttrs.java                # 通道属性
+│   │   │   │       ├── LocalSessionRegistry.java        # 本地会话注册 (之后部署会修改)
+│   │   │   │       └── SessionKeys.java                 # 会话键
+│   │   │   ├── service/                                 # 服务层
+│   │   │   │   ├── AuthService.java                     # 认证服务接口
+│   │   │   │   ├── ConversationService.java             # 会话服务接口
+│   │   │   │   ├── MessageService.java                  # 消息服务接口
+│   │   │   │   ├── dto/                                 # 数据传输对象
+│   │   │   │   │   └── MessageSavedView.java            # 消息保存视图
+│   │   │   │   └── impl/                                # 服务实现类
+│   │   │   │       ├── AuthServiceImpl.java             # 认证服务实现
+│   │   │   │       ├── ConversationServiceImpl.java     # 会话服务实现
+│   │   │   │       └── MessageServiceImpl.java          # 消息服务实现
+│   │   │   ├── util/                                    # 工具类
+│   │   │   │   ├── JwtAuthFilter.java                   # JWT认证过滤器
+│   │   │   │   └── JwtService.java                      # JWT服务
+│   │   │   └── KnotServerApplication.java               # 应用入口类
 │   │   └── resources/
-│   │       ├── application.yml              # 应用配置文件
-│   │       ├── db/migration/                # Flyway数据库迁移脚本
-│   │       │   ├── V1__init_schema.sql      # 初始化架构
-│   │       │   └── V2__messaging_schema.sql # 消息架构
-│   │       └── static/                      # 静态资源
-│   │           └── client/                  # 客户端测试页面
-│   │              └── login.html           # 登录测试页面
-│   └── test/                                # 测试代码
-│       └── java/com/example/knot_server/    # 测试源代码
-│           └── KnotServerApplicationTests.java # 应用测试类
+│   │       ├── application.yml                          # 应用配置文件
+│   │       ├── db/migration/                            # Flyway数据库迁移脚本
+│   │       │   ├── V1__init_schema.sql                  # 初始化架构
+│   │       │   └── V2__messaging_schema.sql             # 消息架构
+│   │       └── static/                                  # 静态资源
+│   │           └── client/                              # 客户端测试页面
+│   │              └── login.html                        # 登录测试页面
+│   └── test/                                            # 测试代码
+│       └── java/com/example/knot_server/                # 测试源代码
+│           └── KnotServerApplicationTests.java          # 应用测试类
 ├── docker/
-│   └── mysql/init/                          # MySQL初始化脚本
-│       └── 01-init.sql                      # 数据库初始化SQL
-├── .mvn/                                    # Maven配置
-├── target/                                  # 编译输出目录
-├── docker-compose.yml                       # Docker服务配置
-├── pom.xml                                  # Maven项目配置
-├── mvnw                                     # Maven包装器(Unix)
-└── mvnw.cmd                                 # Maven包装器(Windows)
+│   └── mysql/init/                                      # MySQL初始化脚本
+│       └── 01-init.sql                                  # 数据库初始化SQL
+├── .mvn/                                                # Maven配置
+├── target/                                              # 编译输出目录
+├── docker-compose.yml                                   # Docker服务配置
+├── pom.xml                                              # Maven项目配置
+├── mvnw                                                 # Maven包装器(Unix)
+└── mvnw.cmd                                             # Maven包装器(Windows)
 ```
