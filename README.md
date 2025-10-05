@@ -229,37 +229,37 @@ docker-compose restart mysql
 knot_server/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/example/knot_server/    # Java source code
-│   │   │   ├── config/                      # 应用配置类
-│   │   │   │   ├── AppBeans.java            # Bean 配置
-│   │   │   │   ├── RedisScriptConfig.java   # Redis 脚本配置
-│   │   │   │   ├── SecurityConfig.java      # 安全配置
-│   │   │   │   └── SwaggerConfig.java       # Swagger API 文档配置
-│   │   │   ├── controller/                  # 控制器层
-│   │   │   │   ├── AuthController.java      # 认证相关控制器
-│   │   │   │   ├── ConversationController.java # 会话控制器
-│   │   │   │   └── test/                    # 测试控制器
-│   │   │   ├── entity/                      # 实体类
-│   │   │   │   ├── Conversation.java        # 会话实体
-│   │   │   │   ├── ConversationMember.java  # 会话成员实体
-│   │   │   │   ├── Message.java             # 消息实体
-│   │   │   │   ├── MessageAttachment.java   # 消息附件实体
-│   │   │   │   ├── MessageReceipt.java      # 消息回执实体
-│   │   │   │   ├── SingleConvIndex.java     # 单聊索引实体
-│   │   │   │   └── User.java                # 用户实体
-│   │   │   ├── mapper/                      # MyBatis映射器
-│   │   │   │   ├── ConversationMapper.java  # 会话映射器
-│   │   │   │   ├── ConversationMemberMapper.java # 会话成员映射器
-│   │   │   │   ├── MessageMapper.java       # 消息映射器
-│   │   │   │   ├── MessageAttachmentMapper.java # 消息附件映射器
-│   │   │   │   ├── MessageReceiptMapper.java # 消息回执映射器
-│   │   │   │   ├── SingleConvIndexMapper.java # 单聊索引映射器
-│   │   │   │   └── UserMapper.java          # 用户映射器
-│   │   │   ├── netty/                       # Netty WebSocket服务器
-│   │   │   │   ├── server/                  # 服务器核心组件
-│   │   │   │   │   ├── NettyServer.java     # Netty 服务器
-│   │   │   │   │   ├── NettyServerInitializer.java # 服务器初始化
-│   │   │   │   │   ├── model/               # 服务器模型
+│   │   ├── java/com/example/knot_server/          # Java source code
+│   │   │   ├── config/                            # 应用配置类
+│   │   │   │   ├── AppBeans.java                  # Bean 配置
+│   │   │   │   ├── RedisScriptConfig.java         # Redis 脚本配置
+│   │   │   │   ├── SecurityConfig.java            # 安全配置
+│   │   │   │   └── SwaggerConfig.java             # Swagger API 文档配置
+│   │   │   ├── controller/                        # 控制器层
+│   │   │   │   ├── AuthController.java            # 认证相关控制器
+│   │   │   │   ├── ConversationController.java    # 会话控制器
+│   │   │   │   └── test/                          # 测试控制器
+│   │   │   ├── entity/                            # 实体类
+│   │   │   │   ├── Conversation.java              # 会话实体
+│   │   │   │   ├── ConversationMember.java        # 会话成员实体
+│   │   │   │   ├── Message.java                   # 消息实体
+│   │   │   │   ├── MessageAttachment.java         # 消息附件实体
+│   │   │   │   ├── MessageReceipt.java            # 消息回执实体
+│   │   │   │   ├── SingleConvIndex.java           # 单聊索引实体
+│   │   │   │   └── User.java                      # 用户实体
+│   │   │   ├── mapper/                            # MyBatis映射器
+│   │   │   │   ├── ConversationMapper.java        # 会话映射器
+│   │   │   │   ├── ConversationMemberMapper.java  # 会话成员映射器
+│   │   │   │   ├── MessageMapper.java             # 消息映射器
+│   │   │   │   ├── MessageAttachmentMapper.java      # 消息附件映射器
+│   │   │   │   ├── MessageReceiptMapper.java         # 消息回执映射器
+│   │   │   │   ├── SingleConvIndexMapper.java        # 单聊索引映射器
+│   │   │   │   └── UserMapper.java                   # 用户映射器
+│   │   │   ├── netty/                                # Netty WebSocket服务器
+│   │   │   │   ├── server/                           # 服务器核心组件
+│   │   │   │   │   ├── NettyServer.java              # Netty 服务器
+│   │   │   │   │   ├── NettyServerInitializer.java   # 服务器初始化
+│   │   │   │   │   ├── model/                  # 服务器模型
 │   │   │   │   │   │   └── WsSendMessage.java # WebSocket 发送消息
 │   │   │   │   │   └── handler/             # 消息处理器
 │   │   │   │   │       ├── AuthHandler.java  # 认证处理
