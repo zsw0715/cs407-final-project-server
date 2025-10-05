@@ -27,22 +27,21 @@ import lombok.extern.slf4j.Slf4j;
 @ChannelHandler.Sharable
 public class AuthHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 
-    // 会话注册表
     private final LocalSessionRegistry registry;
-
-    // Redis 模板
     private final StringRedisTemplate redis;
-
-    // JWT 服务
     private final JwtService jwt;
 
-    // JSON 处理器
-    private final ObjectMapper om = new ObjectMapper();
+    // User user = new User(1, "Alice");
+    // String json = om.writeValueAsString(user);  
+    // 输出：{"id":1,"name":"Alice"}
 
-    // 设置在线状态的过期时间为 90 秒
+    // String json = "{\"id\":1,\"name\":\"Alice\"}";
+    // User user = om.readValue(json, User.class);
+    // user.getId() == 1, user.getName() == "Alice"
+    private final ObjectMapper om = new ObjectMapper();   // Java对象 → JSON OR JSON → Java对象
+
     private static final int ONLINE_TTL_SECONDS = 90;
 
-    // 构造函数注入依赖
     public AuthHandler(LocalSessionRegistry registry, StringRedisTemplate redis, JwtService jwt) {
         this.registry = registry;
         this.redis = redis;
