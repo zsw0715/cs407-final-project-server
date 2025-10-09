@@ -1,5 +1,6 @@
 package com.example.knot_server.service.impl;
 
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,6 +79,41 @@ public class ConversationServiceImpl implements ConversationService {
         conversationMemberMapper.insert(m2);
 
         return conv.getConvId();
-    }   
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createGroupConv(String groupName, Long[] memberIds, Long creatorId) {
+        var now = java.time.LocalDateTime.now();
+
+        // 1) 创建 conversation 记录, mysql, convType=2 (group_conversation)
+        Conversation conv = new Conversation();
+        conv.setConvType(2);
+        conv.setTitle(groupName);
+        conv.setCreatorId(creatorId);
+        conv.setCreatedAt(now);
+        conv.setUpdatedAt(now);
+        conversationMapper.insert(conv);
+
+        // 2) 创建 conversation_member 记录
+        for (Long memberId : memberIds) {
+            ConversationMember member = new ConversationMember();
+            member.setConvId(conv.getConvId());
+            member.setUserId(memberId);
+            member.setJoinedAt(now);
+            member.setConvRole(0); // 0=普通成员
+            conversationMemberMapper.insert(member);
+        }
+
+        // 3） 创建者作为群主加入
+        ConversationMember owner = new ConversationMember();
+        owner.setConvId(conv.getConvId());
+        owner.setUserId(creatorId);
+        owner.setJoinedAt(now);
+        owner.setConvRole(2); // 2=群主
+        conversationMemberMapper.insert(owner);
+
+        return conv.getConvId();
+    }
 
 }
