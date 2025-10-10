@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.knot_server.controller.dto.ApiResponse;
+import com.example.knot_server.controller.dto.IdResponse;
 import com.example.knot_server.service.ConversationService;
 import com.example.knot_server.util.JwtAuthFilter;
 
@@ -24,7 +25,7 @@ public class ConversationController {
      * 获取或创建单聊会话
      */
     @PostMapping("/getOrCreateSingle")
-    public ResponseEntity<ApiResponse<?>> getOrCreateSingle(@RequestParam Long otherUserId, Authentication auth) {
+    public ResponseEntity<ApiResponse<IdResponse>> getOrCreateSingle(@RequestParam Long otherUserId, Authentication auth) {
         // 从JWT认证信息中获取当前用户ID
         JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
         Long currentUserId = principal.uid();
@@ -33,7 +34,7 @@ public class ConversationController {
         if (convId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("无法创建或获取会话"));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("会话获取成功", convId));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("会话获取成功", new IdResponse(convId)));
     }
 
     /**
@@ -49,6 +50,6 @@ public class ConversationController {
         if (convId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("无法创建群会话"));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("组会话创建成功", convId));
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("组会话创建成功", new IdResponse(convId)));
     }
 }
