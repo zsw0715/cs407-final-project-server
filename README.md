@@ -306,11 +306,4 @@ knot_server/
 ├── mvnw                                                 # Maven wrapper (Unix)
 └── mvnw.cmd                                             # Maven wrapper (Windows)
 ```
-│       └── 01-init.sql                                  # 数据库初始化SQL
-├── .mvn/                                                # Maven配置
-├── target/                                              # 编译输出目录
-├── docker-compose.yml                                   # Docker服务配置
-├── pom.xml                                              # Maven项目配置
-├── mvnw                                                 # Maven包装器(Unix)
-└── mvnw.cmd                                             # Maven包装器(Windows)
-```
+
