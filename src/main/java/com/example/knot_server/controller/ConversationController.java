@@ -41,7 +41,7 @@ public class ConversationController {
      * 获取或创建群聊会话
      */
     @PostMapping("/createGroup")
-    public ResponseEntity<ApiResponse<?>> createGroup(@RequestParam String groupName,
+    public ResponseEntity<ApiResponse<IdResponse>> createGroup(@RequestParam String groupName,
             @RequestParam(required = false) Long[] memberIds, Authentication auth) {
         // 从JWT认证信息中获取当前用户ID
         JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
