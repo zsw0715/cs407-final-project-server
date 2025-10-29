@@ -12,7 +12,6 @@ import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.service.UserService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 @Service

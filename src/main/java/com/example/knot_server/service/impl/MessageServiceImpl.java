@@ -1,9 +1,11 @@
 package com.example.knot_server.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,9 +13,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.Message;
+import com.example.knot_server.entity.MessageReceipt;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
 import com.example.knot_server.mapper.MessageMapper;
+import com.example.knot_server.mapper.MessageReceiptMapper;
 import com.example.knot_server.netty.server.model.WsSendMessage;
 import com.example.knot_server.service.MessageService;
 import com.example.knot_server.service.dto.MessageSavedView;
@@ -27,6 +31,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageMapper messageMapper;
     private final ConversationMemberMapper conversationMemberMapper;
     private final ConversationMapper conversationMapper;
+    private final MessageReceiptMapper messageReceiptMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -115,6 +120,21 @@ public class MessageServiceImpl implements MessageService {
                 ? msg.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
                 : System.currentTimeMillis();
 
+
+        // 6) 消息回执，只记录 receivers 的已送达状态
+        for (Long uid : members) {
+                if (Objects.equals(uid, senderUid)) {
+                        continue; // 发送者不记录已送达
+                }
+                MessageReceipt receipt = new MessageReceipt();
+                LocalDateTime now = LocalDateTime.now();
+                receipt.setMsgId(msg.getMsgId());
+                receipt.setUserId(uid);
+                receipt.setDeliveredAt(now);
+                messageReceiptMapper.insert(receipt);
+        }
+
+        // 7) 返回结果
         return MessageSavedView.builder()
                 .msgId(msg.getMsgId())
                 .convId(msg.getConvId())
