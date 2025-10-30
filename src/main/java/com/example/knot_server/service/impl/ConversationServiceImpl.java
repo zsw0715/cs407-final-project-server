@@ -1,10 +1,14 @@
 package com.example.knot_server.service.impl;
 
+import java.util.List;
+
 // import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.knot_server.controller.dto.ConversationSummaryResponse;
+import com.example.knot_server.controller.dto.IdResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.SingleConvIndex;
@@ -114,6 +118,12 @@ public class ConversationServiceImpl implements ConversationService {
         conversationMemberMapper.insert(owner);
 
         return conv.getConvId();
+    }
+
+    @Override
+    public List<ConversationSummaryResponse> listUserConversations(Long userId) {
+        List<ConversationSummaryResponse> conversations = conversationMapper.listUserConversations(userId);
+        return conversations;
     }
 
 }

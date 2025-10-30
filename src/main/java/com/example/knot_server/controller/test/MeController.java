@@ -1,4 +1,4 @@
-package com.example.knot_server.controller;
+package com.example.knot_server.controller.test;
 
 import java.util.List;
 import java.util.Map;
