@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.knot_server.controller.dto.ApiResponse;
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
 import com.example.knot_server.controller.dto.IdResponse;
+import com.example.knot_server.controller.dto.MessagePageResponse;
 import com.example.knot_server.service.ConversationService;
 import com.example.knot_server.util.JwtAuthFilter;
 
@@ -73,12 +74,19 @@ public class ConversationController {
     /**
      * 分页获取会话中 messages
      */
-    @PostMapping("/messages")
-    public ResponseEntity<ApiResponse<Object>> getConversationMessages(@RequestParam Long conversationId,
+    @GetMapping("/messages")
+    public ResponseEntity<ApiResponse<MessagePageResponse>> getConversationMessages(@RequestParam Long conversationId,
             @RequestParam int page, @RequestParam int size, Authentication auth) {
         JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
         Long currentUserId = principal.uid();
 
-        return null;
+        // 检查当前用户是否是会话的成员
+        boolean isMember = conversationService.isMember(conversationId, currentUserId);
+        if (!isMember) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("当前用户不是会话的成员"));
+        }
+
+        MessagePageResponse messages = conversationService.getConversationMessages(conversationId, page, size);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("会话消息获取成功", messages));
     }
 }

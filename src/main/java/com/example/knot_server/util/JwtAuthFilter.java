@@ -10,7 +10,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.Claims;
-import io.micrometer.common.lang.NonNull;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;

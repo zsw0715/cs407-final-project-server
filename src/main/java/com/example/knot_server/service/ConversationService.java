@@ -3,6 +3,7 @@ package com.example.knot_server.service;
 import java.util.List;
 
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
+import com.example.knot_server.controller.dto.MessagePageResponse;
 
 /**
  * 会话服务接口
@@ -24,4 +25,13 @@ public interface ConversationService {
      */
     List<ConversationSummaryResponse> listUserConversations(Long userId);
 
+    /**
+     * 分页获取会话中 messages
+     */
+    MessagePageResponse getConversationMessages(Long conversationId, int page, int size);
+
+    /**
+     * 检查当前用户是否是会话的成员
+     */
+    boolean isMember(Long conversationId, Long userId);
 }

@@ -36,4 +36,41 @@
         ORDER BY c.updated_at DESC;
     </select>
 
+    <!-- 分页查询会话消息 -->
+    <select id="getConversationMessages" resultType="com.example.knot_server.entity.Message">
+        SELECT
+            msg_id,
+            conv_id,
+            sender_id,
+            msg_type,
+            client_msg_id,
+            content_text,
+            loc_lat,
+            loc_lng,
+            loc_name,
+            loc_accuracy_m,
+            geohash,
+            reply_to_msg_id,
+            media_url,
+            media_thumb_url,
+            media_meta_json,
+            msg_status,
+            created_at,
+            edited_at,
+            deleted_at
+        FROM messages
+        WHERE conv_id = #{convId}
+          AND msg_status != 2
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 查询会话消息总数 -->
+    <select id="countConversationMessages" resultType="long">
+        SELECT COUNT(*)
+        FROM messages
+        WHERE conv_id = #{convId}
+          AND msg_status != 2
+    </select>
+
 </mapper>

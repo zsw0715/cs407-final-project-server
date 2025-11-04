@@ -2,15 +2,16 @@ package com.example.knot_server.service.impl;
 
 import java.util.List;
 
-// import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
-import com.example.knot_server.controller.dto.IdResponse;
+import com.example.knot_server.controller.dto.MessagePageResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
+import com.example.knot_server.entity.Message;
 import com.example.knot_server.entity.SingleConvIndex;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
@@ -124,6 +125,41 @@ public class ConversationServiceImpl implements ConversationService {
     public List<ConversationSummaryResponse> listUserConversations(Long userId) {
         List<ConversationSummaryResponse> conversations = conversationMapper.listUserConversations(userId);
         return conversations;
+    }
+
+    @Override
+    public MessagePageResponse getConversationMessages(Long conversationId, int page, int size) {
+        // 1. 计算 offset
+        int offset = (page - 1) * size;
+        
+        // 2. 查询消息列表
+        List<Message> messages = conversationMapper.getConversationMessages(conversationId, size, offset);
+        
+        // 3. 查询总记录数
+        Long total = conversationMapper.countConversationMessages(conversationId);
+        
+        // 4. 计算总页数
+        int totalPages = (int) Math.ceil((double) total / size);
+        
+        // 5. 构建返回对象
+        MessagePageResponse response = new MessagePageResponse();
+        response.setConvId(conversationId);
+        response.setPage(page);
+        response.setSize(size);
+        response.setTotal(total);
+        response.setTotalPages(totalPages);
+        response.setMessageList(messages);
+        
+        return response;
+    }
+
+    @Override
+    public boolean isMember(Long conversationId, Long userId) {
+        return conversationMemberMapper.selectCount(
+                new LambdaQueryWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConvId, conversationId)
+                        .eq(ConversationMember::getUserId, userId)
+                        .last("LIMIT 1")) > 0;
     }
 
 }
