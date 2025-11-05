@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.knot_server.netty.server.handler.AuthHandler;
 import com.example.knot_server.netty.server.handler.CleanupHandler;
+import com.example.knot_server.netty.server.handler.FriendRequestHandler;
 import com.example.knot_server.netty.server.handler.HeartBeatHandler;
 import com.example.knot_server.netty.server.handler.LogoutHandler;
 import com.example.knot_server.netty.server.handler.MessageHandler;
@@ -25,19 +26,22 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
     private final LogoutHandler logoutHandler;
     private final HeartBeatHandler heartBeatHandler;
     private final MessageHandler messageHandler;
+    private final FriendRequestHandler friendRequestHandler;
 
     public NettyServerInitializer(
                 AuthHandler authHandler, 
                 CleanupHandler cleanupHandler, 
                 LogoutHandler logoutHandler,
                 HeartBeatHandler heartBeatHandler,
-                MessageHandler messageHandler
+                MessageHandler messageHandler,
+                FriendRequestHandler friendRequestHandler
             ) {
         this.authHandler = authHandler;
         this.cleanupHandler = cleanupHandler;
         this.logoutHandler = logoutHandler;
         this.heartBeatHandler = heartBeatHandler;
         this.messageHandler = messageHandler;
+        this.friendRequestHandler = friendRequestHandler;
     }
 
     @Override
@@ -66,6 +70,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
 
         p.addLast("authHandler", authHandler);
         p.addLast("heartBeatHandler", heartBeatHandler);
+        p.addLast("friendRequestHandler", friendRequestHandler);
         p.addLast("messageHandler", messageHandler);
         p.addLast("logoutHandler", logoutHandler);
         p.addLast("cleanupHandler", cleanupHandler);
