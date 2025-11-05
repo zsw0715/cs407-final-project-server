@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.knot_server.netty.server.model.WsMessageAck;
+import com.example.knot_server.netty.server.model.WsMessageNew;
 import com.example.knot_server.netty.server.model.WsSendMessage;
 import com.example.knot_server.netty.session.ChannelAttrs;
 import com.example.knot_server.netty.session.LocalSessionRegistry;
@@ -58,27 +60,36 @@ public class MessageHandler extends SimpleChannelInboundHandler<TextWebSocketFra
             MessageSavedView saved = messageService.saveFromWebSocket(uid, req);
 
             // 2) 回 ACK 给发送者
-            var ack = om.createObjectNode();
-            ack.put("type", "MSG_ACK");
-            ack.put("msgId", saved.getMsgId());
-            ack.put("clientMsgId", req.getClientMsgId());
-            ack.put("serverTime", System.currentTimeMillis());
+            WsMessageAck ack = WsMessageAck.builder()
+                    .type("MSG_ACK")
+                    .msgId(saved.getMsgId())
+                    .clientMsgId(req.getClientMsgId())
+                    .serverTime(System.currentTimeMillis())
+                    .build();
             ctx.writeAndFlush(new TextWebSocketFrame(om.writeValueAsString(ack)));
 
             // 3) 组装下发 payload（发给其他会话成员）
-            var push = om.createObjectNode();
-            push.put("type", "MSG_NEW");
-            push.put("convId", saved.getConvId());
-            push.put("msgId", saved.getMsgId());
-            push.put("fromUid", saved.getFromUid());
-            push.put("msgType", saved.getMsgType());
-            if (saved.getContentText() != null)   push.put("contentText", saved.getContentText());
-            if (saved.getMediaUrl() != null)      push.put("mediaUrl", saved.getMediaUrl());
-            if (saved.getMediaThumbUrl() != null) push.put("mediaThumbUrl", saved.getMediaThumbUrl());
+            Object mediaMeta = null;
             if (saved.getMediaMetaJson() != null) {
-                try { push.set("mediaMeta", om.readTree(saved.getMediaMetaJson())); } catch (Exception ignore) {}
+                try {
+                    mediaMeta = om.readTree(saved.getMediaMetaJson());
+                } catch (Exception ignore) {
+                    // JSON 解析失败，保持 null
+                }
             }
-            if (saved.getCreatedAtMs() != null)   push.put("createdAtMs", saved.getCreatedAtMs());
+            
+            WsMessageNew push = WsMessageNew.builder()
+                    .type("MSG_NEW")
+                    .convId(saved.getConvId())
+                    .msgId(saved.getMsgId())
+                    .fromUid(saved.getFromUid())
+                    .msgType(saved.getMsgType())
+                    .contentText(saved.getContentText())
+                    .mediaUrl(saved.getMediaUrl())
+                    .mediaThumbUrl(saved.getMediaThumbUrl())
+                    .mediaMeta(mediaMeta)
+                    .createdAtMs(saved.getCreatedAtMs())
+                    .build();
             String payload = om.writeValueAsString(push);
 
             // 4) 广播（逐个 try/catch，失败不影响其他人）
