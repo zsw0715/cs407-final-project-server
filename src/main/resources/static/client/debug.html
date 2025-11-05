@@ -7,15 +7,15 @@
     <title>Knot Debug – CS407 Final Project Server</title>
     <style>
         :root {
-            --bg: #0b0f14;
-            --panel: #121821;
-            --muted: #8aa1b4;
-            --text: #e5eef7;
-            --green: #22c55e;
-            --red: #ef4444;
-            --amber: #f59e0b;
-            --cyan: #22d3ee;
-            --border: #1f2a37;
+            --bg: #f8f9fa;
+            --panel: #ffffff;
+            --muted: #6c757d;
+            --text: #212529;
+            --green: #198754;
+            --red: #dc3545;
+            --amber: #fd7e14;
+            --cyan: #0dcaf0;
+            --border: #dee2e6;
         }
 
         html,
@@ -39,7 +39,7 @@
         h1 {
             margin: 0 0 14px;
             font-size: 20px;
-            color: #cfe3ff
+            color: #1a1a1a
         }
 
         .row {
@@ -52,9 +52,9 @@
         .card {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 26px;
             padding: 14px 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
         }
 
         .col {
@@ -69,27 +69,28 @@
         }
 
         input {
-            background: #0f1520;
+            background: #ffffff;
             border: 1px solid var(--border);
             color: var(--text);
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 20px;
             width: 100%;
             box-sizing: border-box
         }
 
         button {
-            background: #172230;
+            background: #e9ecef;
             color: var(--text);
             border: 1px solid var(--border);
             padding: 10px 14px;
-            border-radius: 10px;
+            border-radius: 20px;
             cursor: pointer
         }
 
         button.primary {
-            background: #1b2b3d;
-            border-color: #213247
+            background: #0d6efd;
+            color: #ffffff;
+            border-color: #0d6efd
         }
 
         button:disabled {
@@ -102,7 +103,7 @@
             gap: 6px;
             align-items: center;
             border: 1px solid var(--border);
-            background: #0f1520;
+            background: #f8f9fa;
             padding: 6px 10px;
             border-radius: 999px;
             font-size: 12px;
@@ -127,10 +128,11 @@
 
         /* 日志自动换行且无横向滚动 */
         #log {
-            background: #05080c;
-            border: 1px solid #0f1822;
-            border-radius: 12px;
+            background: #f8f9fa;
+            border: 1px solid var(--border);
+            border-radius: 20px;
             padding: 12px;
+            margin-top: 10px;
             min-height: 260px;
             max-height: 420px;
             overflow-y: auto;

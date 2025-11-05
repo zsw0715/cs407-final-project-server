@@ -45,7 +45,7 @@ For detailed project information, please refer to our [Project Proposal](./CS407
 4. **Verify everything is working**
    - Spring Boot Application: http://localhost:8080
    - API Documentation: http://localhost:8080/swagger-ui.html
-   - GUI API Testing: http://localhost:8080/client/login.html
+   - GUI API Testing: http://localhost:8080/client/debug.html
    - Netty WebSocket Server: ws://localhost:10827/ws
 
 ---
@@ -77,7 +77,7 @@ You can connect using any MySQL client:
 
 ## WebSocket Testing 
 
-We use **JWT access token (AT)** obtained from the login API to authenticate WebSocket connections. You can test temporarily through the http://localhost:8080/client/login.html page.
+We use **JWT access token (AT)** obtained from the login API to authenticate WebSocket connections. You can test temporarily through the http://localhost:8080/client/debug.html page.
 
 ### Preparation
 
