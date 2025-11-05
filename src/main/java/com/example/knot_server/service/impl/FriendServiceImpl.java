@@ -1,6 +1,8 @@
 package com.example.knot_server.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -8,11 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.knot_server.entity.FriendRequests;
 import com.example.knot_server.entity.Friends;
+import com.example.knot_server.entity.User;
 import com.example.knot_server.mapper.FriendRequestsMapper;
 import com.example.knot_server.mapper.FriendsMapper;
+import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.service.ConversationService;
 import com.example.knot_server.service.FriendService;
 import com.example.knot_server.service.dto.FriendRequestView;
+import com.example.knot_server.service.dto.FriendView;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +27,7 @@ public class FriendServiceImpl implements FriendService {
   private final FriendsMapper friendsMapper;
   private final FriendRequestsMapper friendRequestsMapper;
   private final ConversationService conversationService;
+  private final UserMapper userMapper;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -191,6 +197,83 @@ public class FriendServiceImpl implements FriendService {
         .status(2)
         .createdAtMs(createdAtMs)
         .build();
+  }
+
+  @Override
+  public List<FriendView> listFriends(Long currentUserId) {
+    // 1. 查询所有好友关系（当前用户在 user_min_id 或 user_max_id）
+    List<Friends> friendsList = friendsMapper.selectList(
+        new LambdaQueryWrapper<Friends>()
+            .and(wrapper -> wrapper
+                .eq(Friends::getUserMinId, currentUserId)
+                .or()
+                .eq(Friends::getUserMaxId, currentUserId)
+            )
+    );
+
+    // 2. 遍历好友关系，组装 FriendView
+    return friendsList.stream().map(friends -> {
+      // 确定对方的ID
+      Long friendId = friends.getUserMinId().equals(currentUserId)
+          ? friends.getUserMaxId()
+          : friends.getUserMinId();
+
+      // 查询对方用户信息
+      User friendUser = userMapper.selectById(friendId);
+      if (friendUser == null) {
+        return null; // 跳过不存在的用户
+      }
+
+      // 获取单聊会话ID
+      Long convId = conversationService.getOrCreateSingleConv(currentUserId, friendId);
+
+      // 转换时间戳
+      Long createdAtMs = friends.getCreatedAt()
+          .atZone(java.time.ZoneId.systemDefault())
+          .toInstant()
+          .toEpochMilli();
+
+      // 构建返回对象
+      return FriendView.builder()
+          .friendId(friendId)
+          .username(friendUser.getUsername())
+          .avatar(friendUser.getAvatarUrl())
+          .createdAtMs(createdAtMs)
+          .convId(convId)
+          .build();
+    })
+    .filter(view -> view != null) // 过滤掉 null 的记录
+    .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<FriendRequestView> listFriendRequests(Long currentUserId) {
+    // 1. 查询所有接收到的好友申请（当前用户是接收者，待处理）
+    List<FriendRequests> requests = friendRequestsMapper.selectList(
+        new LambdaQueryWrapper<FriendRequests>()
+            .eq(FriendRequests::getReqReceiverId, currentUserId)
+            .eq(FriendRequests::getStatus, 0) // 只查询待处理的
+            .orderByDesc(FriendRequests::getCreatedAt) // 按时间倒序
+    );
+
+    // 2. 遍历申请，组装 FriendRequestView
+    return requests.stream().map(request -> {
+      // 转换时间戳
+      Long createdAtMs = request.getCreatedAt()
+          .atZone(java.time.ZoneId.systemDefault())
+          .toInstant()
+          .toEpochMilli();
+
+      // 构建返回对象
+      return FriendRequestView.builder()
+          .requestId(request.getReqId())
+          .requesterId(request.getReqSenderId())
+          .receiverId(request.getReqReceiverId())
+          .message(request.getMessage())
+          .status(request.getStatus())
+          .createdAtMs(createdAtMs)
+          .build();
+    }).collect(Collectors.toList());
   }
 
 }
