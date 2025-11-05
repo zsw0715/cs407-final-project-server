@@ -46,24 +46,43 @@ public class FriendServiceImpl implements FriendService {
       throw new IllegalArgumentException("Already friends");
     }
 
-    // 3. 检查是否已有待处理的申请
-    FriendRequests existingRequest = friendRequestsMapper.selectOne(
-        new LambdaQueryWrapper<FriendRequests>()
-            .eq(FriendRequests::getReqSenderId, requesterId)
-            .eq(FriendRequests::getReqReceiverId, receiverId)
-            .eq(FriendRequests::getStatus, 0) // 待处理
-            .last("LIMIT 1"));
-    if (existingRequest != null) {
-      throw new IllegalArgumentException("Friend request already sent");
-    }
-
-    // 4. 创建好友申请
-    FriendRequests request = new FriendRequests();
-    request.setReqSenderId(requesterId);
-    request.setReqReceiverId(receiverId);
-    request.setMessage(message);
-    request.setStatus(0); // 待处理
-    friendRequestsMapper.insert(request);
+        // 3. 检查是否已有申请记录（任何状态）
+        FriendRequests existingRequest = friendRequestsMapper.selectOne(
+                new LambdaQueryWrapper<FriendRequests>()
+                        .eq(FriendRequests::getReqSenderId, requesterId)
+                        .eq(FriendRequests::getReqReceiverId, receiverId)
+                        .last("LIMIT 1"));
+        
+        FriendRequests request;
+        
+        if (existingRequest != null) {
+            // 3.1 如果是待处理状态，不能重复发送
+            if (existingRequest.getStatus() == 0) {
+                throw new IllegalArgumentException("Friend request already sent");
+            }
+            
+            // 3.2 如果是已拒绝（status=2），可以重新发送，更新现有记录
+            if (existingRequest.getStatus() == 2) {
+                existingRequest.setMessage(message);
+                existingRequest.setStatus(0); // 重置为待处理
+                existingRequest.setCreatedAt(LocalDateTime.now());
+                existingRequest.setUpdatedAt(LocalDateTime.now());
+                friendRequestsMapper.updateById(existingRequest);
+                request = existingRequest;
+            } 
+            // 3.3 如果是已接受（status=1），说明已经是好友了（这种情况之前已经检查过了）
+            else {
+                throw new IllegalArgumentException("Friend request already accepted");
+            }
+        } else {
+            // 4. 没有记录，创建新的好友申请
+            request = new FriendRequests();
+            request.setReqSenderId(requesterId);
+            request.setReqReceiverId(receiverId);
+            request.setMessage(message);
+            request.setStatus(0); // 待处理
+            friendRequestsMapper.insert(request);
+        }
 
     // 5. 构建返回视图
     long createdAtMs = (request.getCreatedAt() != null)

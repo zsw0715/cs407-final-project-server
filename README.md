@@ -184,6 +184,113 @@ We use **JWT access token (AT)** obtained from the login API to authenticate Web
    - `online:{uid}` in Redis is deleted
    - Channel is closed
 
+### Friend Management System
+
+The friend management system uses a **pure WebSocket architecture**, ensuring all operations are performed through real-time connections for architectural consistency.
+
+#### 1. Send Friend Request
+
+**Client A (User 1) sends request to User 2**:
+```json
+{
+  "type": "FRIEND_REQUEST_SEND",
+  "receiverId": 2,
+  "message": "Hi, I'm User1. Let's be friends!"
+}
+```
+
+**Client A receives acknowledgment**:
+```json
+{
+  "type": "FRIEND_REQUEST_ACK",
+  "requestId": 1,
+  "status": "sent",
+  "timestamp": 1699999999000
+}
+```
+
+**Client B (User 2) receives real-time push notification**:
+```json
+{
+  "type": "FRIEND_REQUEST_NEW",
+  "requestId": 1,
+  "fromUser": {
+    "userId": 1,
+    "username": "user1",
+    "avatarUrl": "https://..."
+  },
+  "message": "Hi, I'm User1. Let's be friends!",
+  "timestamp": 1699999999000
+}
+```
+
+#### 2. Accept Friend Request
+
+**Client B (User 2) accepts the request**:
+```json
+{
+  "type": "FRIEND_REQUEST_ACCEPT",
+  "requestId": 1
+}
+```
+
+**Client B Received confirmation response**：
+```json
+{
+  "type": "FRIEND_REQUEST_ACK",
+  "requestId": 1,
+  "status": "accepted",
+  "convId": 123,
+  "timestamp": 1699999999000
+}
+```
+
+**Client A (User 1) receives real-time push notification**:
+```json
+{
+  "type": "FRIEND_ADDED",
+  "requestId": 1,
+  "friend": {
+    "userId": 2,
+    "username": "user2",
+    "avatarUrl": "https://..."
+  },
+  "convId": 123,
+  "timestamp": 1699999999000
+}
+```
+
+After accepting the request, the system will:
+- Create friend relationship (in `friends` table)
+- Automatically create a single conversation (convId returned in response)
+- Both users can start chatting immediately
+
+#### 3. Reject Friend Request
+
+**Client B (User 2) rejects the request**:
+```json
+{
+  "type": "FRIEND_REQUEST_REJECT",
+  "requestId": 1
+}
+```
+
+**Client B receives acknowledgment**:
+```json
+{
+  "type": "FRIEND_REQUEST_ACK",
+  "requestId": 1,
+  "status": "rejected",
+  "timestamp": 1699999999000
+}
+```
+
+#### 4. Resend Request
+
+If a request is rejected, the requester can send another request:
+- The system will automatically update the previous request record to pending status
+- The receiver will receive a new `FRIEND_REQUEST_NEW` push notification
+- Avoids database unique constraint conflicts
 ---
 
 ## Stopping the Environment
@@ -219,91 +326,5 @@ docker-compose logs mysql
 
 # Restart MySQL service
 docker-compose restart mysql
-```
-
----
-
-## Current Project Structure
-
-```
-knot_server/
-├── src/
-│   ├── main/
-│   │   ├── java/com/example/knot_server/                # Java source code
-│   │   │   ├── config/                                  # Application configuration classes
-│   │   │   │   ├── AppBeans.java                        # Bean configuration
-│   │   │   │   ├── RedisScriptConfig.java               # Redis script configuration
-│   │   │   │   ├── SecurityConfig.java                  # Security configuration
-│   │   │   │   └── SwaggerConfig.java                   # Swagger API documentation configuration
-│   │   │   ├── controller/                              # Controller layer
-│   │   │   │   ├── AuthController.java                  # Authentication controller
-│   │   │   │   ├── ConversationController.java          # Conversation controller
-│   │   │   │   └── test/                                # Test controllers
-│   │   │   ├── entity/                                  # Entity classes
-│   │   │   │   ├── Conversation.java                    # Conversation entity
-│   │   │   │   ├── ConversationMember.java              # Conversation member entity
-│   │   │   │   ├── Message.java                         # Message entity
-│   │   │   │   ├── MessageAttachment.java               # Message attachment entity
-│   │   │   │   ├── MessageReceipt.java                  # Message receipt entity
-│   │   │   │   ├── SingleConvIndex.java                 # Single conversation index entity
-│   │   │   │   └── User.java                            # User entity
-│   │   │   ├── mapper/                                  # MyBatis mappers
-│   │   │   │   ├── ConversationMapper.java              # Conversation mapper
-│   │   │   │   ├── ConversationMemberMapper.java        # Conversation member mapper
-│   │   │   │   ├── MessageMapper.java                   # Message mapper
-│   │   │   │   ├── MessageAttachmentMapper.java         # Message attachment mapper
-│   │   │   │   ├── MessageReceiptMapper.java            # Message receipt mapper
-│   │   │   │   ├── SingleConvIndexMapper.java           # Single conversation index mapper
-│   │   │   │   └── UserMapper.java                      # User mapper
-│   │   │   ├── netty/                                   # Netty WebSocket server
-│   │   │   │   ├── server/                              # Server core components
-│   │   │   │   │   ├── NettyServer.java                 # Netty server
-│   │   │   │   │   ├── NettyServerInitializer.java      # Server initializer
-│   │   │   │   │   ├── model/                           # Server models
-│   │   │   │   │   │   └── WsSendMessage.java           # WebSocket send message
-│   │   │   │   │   └── handler/                         # Message handlers
-│   │   │   │   │       ├── AuthHandler.java             # Authentication handler
-│   │   │   │   │       ├── CleanupHandler.java          # Cleanup handler
-│   │   │   │   │       ├── HeartBeatHandler.java        # Heartbeat handler
-│   │   │   │   │       ├── LogoutHandler.java           # Logout handler
-│   │   │   │   │       └── MessageHandler.java          # Message handler
-│   │   │   │   └── session/                             # Session management
-│   │   │   │       ├── ChannelAttrs.java                # Channel attributes
-│   │   │   │       ├── LocalSessionRegistry.java        # Local session registry (will be modified later for deployment)
-│   │   │   │       └── SessionKeys.java                 # Session keys
-│   │   │   ├── service/                                 # Service layer
-│   │   │   │   ├── AuthService.java                     # Authentication service interface
-│   │   │   │   ├── ConversationService.java             # Conversation service interface
-│   │   │   │   ├── MessageService.java                  # Message service interface
-│   │   │   │   ├── dto/                                 # Data transfer objects
-│   │   │   │   │   └── MessageSavedView.java            # Message saved view
-│   │   │   │   └── impl/                                # Service implementation classes
-│   │   │   │       ├── AuthServiceImpl.java             # Authentication service implementation
-│   │   │   │       ├── ConversationServiceImpl.java     # Conversation service implementation
-│   │   │   │       └── MessageServiceImpl.java          # Message service implementation
-│   │   │   ├── util/                                    # Utility classes
-│   │   │   │   ├── JwtAuthFilter.java                   # JWT authentication filter
-│   │   │   │   └── JwtService.java                      # JWT service
-│   │   │   └── KnotServerApplication.java               # Application entry point
-│   │   └── resources/
-│   │       ├── application.yml                          # Application configuration file
-│   │       ├── db/migration/                            # Flyway database migration scripts
-│   │       │   ├── V1__init_schema.sql                  # Initialize schema
-│   │       │   └── V2__messaging_schema.sql             # Messaging schema
-│   │       └── static/                                  # Static resources
-│   │           └── client/                              # Client test pages
-│   │              └── login.html                        # Login test page
-│   └── test/                                            # Test code
-│       └── java/com/example/knot_server/                # Test source code
-│           └── KnotServerApplicationTests.java          # Application test class
-├── docker/
-│   └── mysql/init/                                      # MySQL initialization scripts
-│       └── 01-init.sql                                  # Database initialization SQL
-├── .mvn/                                                # Maven configuration
-├── target/                                              # Compilation output directory
-├── docker-compose.yml                                   # Docker service configuration
-├── pom.xml                                              # Maven project configuration
-├── mvnw                                                 # Maven wrapper (Unix)
-└── mvnw.cmd                                             # Maven wrapper (Windows)
 ```
 
