@@ -2,7 +2,6 @@ package com.example.knot_server.service;
 
 import java.util.List;
 
-import com.example.knot_server.entity.FriendRequests;
 import com.example.knot_server.service.dto.FriendRequestView;
 import com.example.knot_server.service.dto.FriendView;
 
