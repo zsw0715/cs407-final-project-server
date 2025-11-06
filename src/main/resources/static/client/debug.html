@@ -195,48 +195,48 @@
 
                 <div class="row">
                     <div class="col">
-                        <label>用户名</label>
+                        <label>username</label>
                         <input id="username" value="admin">
                     </div>
                     <div class="col">
-                        <label>密码</label>
+                        <label>password</label>
                         <input id="password" type="password" value="123">
                     </div>
                 </div>
 
                 <div class="row">
-                    <button id="btnReg" class="primary">注册</button>
-                    <button id="btnLogin" class="primary">登录 + 自动WS</button>
-                    <button id="btnLogout">登出</button>
+                    <button id="btnReg" class="primary">register</button>
+                    <button id="btnLogin" class="primary">login + auto WS</button>
+                    <button id="btnLogout">logout</button>
                 </div>
 
                 <div class="row">
                     <div class="col">
-                        <label>心跳周期（秒）</label>
+                        <label>heartbeat period (seconds)</label>
                         <input id="hbSec" type="number" value="30">
                     </div>
                     <div class="col">
-                        <div class="muted">流程：登录 → 连接 WS → 发送 <span class="mono">{"type":"AUTH"}</span> → 收到 <span
-                                class="mono">AUTH_OK</span> 后开始心跳。刷新页面会优先使用 RT 自动续期。</div>
+                        <div class="muted">process: login → connect WS → send <span class="mono">{"type":"AUTH"}</span> → receive <span
+                                class="mono">AUTH_OK</span> → start heartbeat. refresh page will use RT to auto renew.</div>
                     </div>
                 </div>
             </div>
 
             <div class="card stack">
-                <label>原始 WebSocket JSON（可选）</label>
-                <input id="raw" placeholder='例如：{"type":"LOGOUT"}'>
+                <label>raw WebSocket JSON (optional)</label>
+                <input id="raw" placeholder='for example: {"type":"LOGOUT"}'>
                 <div class="row">
-                    <button id="btnSendRaw">发送</button>
-                    <button id="btnCloseWs">关闭 WS</button>
+                    <button id="btnSendRaw">send</button>
+                    <button id="btnCloseWs">close WS</button>
                 </div>
             </div>
         </div>
 
         <div class="card">
             <div class="row" style="justify-content:space-between; align-items:center">
-                <div class="muted">终端日志</div>
+                <div class="muted">terminal log</div>
                 <div class="row" style="gap:8px">
-                    <button id="btnClearLog">清空</button>
+                    <button id="btnClearLog">clear</button>
                 </div>
             </div>
             <div id="log"></div>
