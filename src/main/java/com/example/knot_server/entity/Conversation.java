@@ -17,7 +17,7 @@ public class Conversation {
     private Long convId;
 
     @TableField("conv_type")
-    private Integer convType; // 1=single, 2=group, 3=posting
+    private Integer convType; // 1=single, 2=group
 
     private String title;
 
