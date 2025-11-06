@@ -7,6 +7,7 @@ import com.example.knot_server.netty.server.handler.CleanupHandler;
 import com.example.knot_server.netty.server.handler.FriendRequestHandler;
 import com.example.knot_server.netty.server.handler.HeartBeatHandler;
 import com.example.knot_server.netty.server.handler.LogoutHandler;
+import com.example.knot_server.netty.server.handler.MapPostHandler;
 import com.example.knot_server.netty.server.handler.MessageHandler;
 
 import io.netty.channel.ChannelInitializer;
@@ -27,6 +28,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
     private final HeartBeatHandler heartBeatHandler;
     private final MessageHandler messageHandler;
     private final FriendRequestHandler friendRequestHandler;
+    private final MapPostHandler mapPostHandler;
 
     public NettyServerInitializer(
                 AuthHandler authHandler, 
@@ -34,7 +36,8 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
                 LogoutHandler logoutHandler,
                 HeartBeatHandler heartBeatHandler,
                 MessageHandler messageHandler,
-                FriendRequestHandler friendRequestHandler
+                FriendRequestHandler friendRequestHandler,
+                MapPostHandler mapPostHandler
             ) {
         this.authHandler = authHandler;
         this.cleanupHandler = cleanupHandler;
@@ -42,6 +45,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         this.heartBeatHandler = heartBeatHandler;
         this.messageHandler = messageHandler;
         this.friendRequestHandler = friendRequestHandler;
+        this.mapPostHandler = mapPostHandler;
     }
 
     @Override
@@ -72,6 +76,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast("heartBeatHandler", heartBeatHandler);
         p.addLast("friendRequestHandler", friendRequestHandler);
         p.addLast("messageHandler", messageHandler);
+        p.addLast("mapPostHandler", mapPostHandler);
         p.addLast("logoutHandler", logoutHandler);
         p.addLast("cleanupHandler", cleanupHandler);
 
