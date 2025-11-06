@@ -291,6 +291,179 @@ If a request is rejected, the requester can send another request:
 - The system will automatically update the previous request record to pending status
 - The receiver will receive a new `FRIEND_REQUEST_NEW` push notification
 - Avoids database unique constraint conflicts
+
+---
+
+### Map Post System
+
+The Map Post system allows users to create location-based social posts that can be shared with friends. Posts are created via **WebSocket long connection** and include geographic coordinates, media content, and visibility settings.
+
+#### 1. Create Map Post (All Friends Visible)
+
+**Client sends creation request**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-uuid-12345",
+  "title": "Amazing Coffee Shop in Sanlitun",
+  "description": "Just discovered this hidden gem! Great latte and cozy atmosphere ☕",
+  "mediaUrls": [
+    "https://s3.amazonaws.com/photos/cafe-interior.jpg",
+    "https://s3.amazonaws.com/photos/latte.jpg"
+  ],
+  "loc": {
+    "lat": 39.9342,
+    "lng": 116.4478,
+    "name": "Sanlitun SOHO"
+  },
+  "allFriends": true,
+  "memberIds": []
+}
+```
+
+**Creator receives acknowledgment**:
+```json
+{
+  "type": "MAP_POST_ACK",
+  "clientReqId": "test-uuid-12345",
+  "mapPostId": 1,
+  "convId": 1001,
+  "serverTime": 1699268400000
+}
+```
+
+**All friends receive real-time push notification**:
+```json
+{
+  "type": "MAP_POST_NEW",
+  "mapPostId": 1,
+  "convId": 1001,
+  "creatorId": 100,
+  "creatorUsername": "alice",
+  "title": "Amazing Coffee Shop in Sanlitun",
+  "description": "Just discovered this hidden gem! Great latte and cozy atmosphere ☕",
+  "mediaUrls": [
+    "https://s3.amazonaws.com/photos/cafe-interior.jpg",
+    "https://s3.amazonaws.com/photos/latte.jpg"
+  ],
+  "loc": {
+    "lat": 39.9342,
+    "lng": 116.4478,
+    "name": "Sanlitun SOHO"
+  },
+  "createdAtMs": 1699268400000
+}
+```
+
+#### 2. Create Map Post (Selected Friends Visible)
+
+**Client sends creation request with specific members**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-uuid-67890",
+  "title": "Private Dinner Spot",
+  "description": "Weekend gathering location",
+  "mediaUrls": ["https://s3.amazonaws.com/photos/restaurant.jpg"],
+  "loc": {
+    "lat": 39.9088,
+    "lng": 116.3975,
+    "name": "Gongti Restaurant"
+  },
+  "allFriends": false,
+  "memberIds": [101, 102, 103]
+}
+```
+
+> **Note**: When `allFriends` is `false`, you must provide a non-empty `memberIds` array. The creator will be automatically added to the member list.
+
+#### 3. Map Post Without Media
+
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-uuid-99999",
+  "title": "Sam's Club Sale",
+  "description": "Beef 50% off today!",
+  "mediaUrls": [],
+  "loc": {
+    "lat": 39.9042,
+    "lng": 116.4074,
+    "name": "Chaoyang Joy City"
+  },
+  "allFriends": true,
+  "memberIds": []
+}
+```
+
+#### 4. Error Scenarios
+
+**Missing location information**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "error-test-1",
+  "title": "Test Post",
+  "description": "Missing location",
+  "mediaUrls": [],
+  "allFriends": true,
+  "memberIds": []
+}
+```
+> **Response**: `{"type":"ERROR","msg":"Location (lat, lng) is required"}`
+
+**Empty memberIds when allFriends is false**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "error-test-2",
+  "title": "Test Post",
+  "description": "No members specified",
+  "mediaUrls": [],
+  "loc": {"lat": 39.93, "lng": 116.44, "name": "Test"},
+  "allFriends": false,
+  "memberIds": []
+}
+```
+> **Response**: `{"type":"ERROR","msg":"memberIds cannot be empty when allFriends is false"}`
+
+**Invalid coordinates**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "error-test-3",
+  "title": "Test Post",
+  "description": "Invalid coordinates",
+  "mediaUrls": [],
+  "loc": {"lat": 999.99, "lng": 116.44, "name": "Test"},
+  "allFriends": true,
+  "memberIds": []
+}
+```
+> **Response**: `{"type":"ERROR","msg":"Invalid latitude or longitude"}`
+
+#### 5. Map Post Architecture
+
+When a Map Post is created:
+- A `map_posts` record is created with location data and content
+- A corresponding `conversation` (conv_type=3) is created as the comment section
+- Members are added to `conversation_members` based on visibility settings
+- The `convId` is returned, allowing users to comment via the standard messaging system
+
+**Database Tables**:
+- `map_posts`: Stores post content, location (lat/lng/geohash), and statistics
+- `conversations`: Stores the comment section (conv_type=3)
+- `conversation_members`: Stores who can view and comment on the post
+- `map_post_likes`: (Optional) Stores like records
+
+**Field Validations**:
+- `title`: Required, non-empty string
+- `loc.lat`: Required, range [-90, 90]
+- `loc.lng`: Required, range [-180, 180]
+- `allFriends`: Required, boolean
+- `memberIds`: Required if `allFriends` is `false`, must be non-empty array
+- `mediaUrls`: Optional, array of pre-uploaded S3 URLs
+
 ---
 
 ## Stopping the Environment
