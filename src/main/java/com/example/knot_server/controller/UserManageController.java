@@ -4,9 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.knot_server.controller.dto.ApiResponse;
@@ -14,6 +16,7 @@ import com.example.knot_server.controller.dto.ChangePasswordRequest;
 import com.example.knot_server.controller.dto.UserSettingsRequest;
 import com.example.knot_server.controller.dto.UserSettingsResponse;
 import com.example.knot_server.service.UserService;
+import com.example.knot_server.service.dto.UserView;
 import com.example.knot_server.util.JwtAuthFilter;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/user")
-public class UserSettingsController {
+public class UserManageController {
 
   private final UserService userService;
 
@@ -78,4 +81,17 @@ public class UserSettingsController {
         : ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("旧密码不正确，无法修改密码"));
   }
 
+  /**
+   * 根据用户名获取用户信息
+   * 
+   * @param username 用户名
+   * @return 用户信息响应
+   */
+  @GetMapping("/info")
+  public ResponseEntity<ApiResponse<UserView>> getUserByUsername(@RequestParam String username) {
+    UserView user = userService.getUserByUsername(username);
+    return user != null
+        ? ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("用户信息获取成功", user))
+        : ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("用户不存在", null));
+  }
 }

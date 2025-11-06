@@ -5,11 +5,13 @@ import java.time.LocalDateTime;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.knot_server.controller.dto.UserSettingsRequest;
 import com.example.knot_server.controller.dto.UserSettingsResponse;
 import com.example.knot_server.entity.User;
 import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.service.UserService;
+import com.example.knot_server.service.dto.UserView;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,4 +85,31 @@ public class UserServiceImpl implements UserService {
     return userMapper.updateById(user) > 0;
   }
 
+  @Override
+  public UserView getUserByUsername(String username) {
+    User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+    if (user == null) {
+      return null;
+    }
+    return UserView.builder()
+        .userid(user.getUserid())
+        .username(user.getUsername())
+        .nickname(user.getNickname())
+        .email(user.getEmail())
+        .gender(user.getGender())
+        .age(user.getAge())
+        .birthdate(user.getBirthdate())
+        .avatarUrl(user.getAvatarUrl())
+        .accountStatus(user.getAccountStatus())
+        .lastLatitude(user.getLastLatitude())
+        .lastLongitude(user.getLastLongitude())
+        .lastLocationUpdate(user.getLastLocationUpdate())
+        .statusMessage(user.getStatusMessage())
+        .lastOnlineTime(user.getLastOnlineTime())
+        .discoverable(user.getDiscoverable())
+        .privacyLevel(user.getPrivacyLevel())
+        .deviceId(user.getDeviceId())
+        .createdAt(user.getCreatedAt())
+        .build();
+  }
 }
