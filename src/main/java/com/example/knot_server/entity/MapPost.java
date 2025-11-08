@@ -13,7 +13,12 @@ import lombok.Data;
 @Data
 @TableName("map_posts")
 public class MapPost {
-    
+    public enum PostType {
+        ALL,
+        REQUEST,
+        COMMENT
+    }
+
     @TableId(value = "map_post_id", type = IdType.AUTO)
     private Long mapPostId;
 
@@ -60,4 +65,7 @@ public class MapPost {
 
     @TableField("deleted_at")
     private LocalDateTime deletedAt;
+
+    @TableField("post_type")
+    private PostType postType = PostType.ALL;
 }

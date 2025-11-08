@@ -3,12 +3,16 @@ package com.example.knot_server.service.impl;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.knot_server.controller.dto.NearbyPostRequest;
+import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.MapPost;
@@ -26,6 +30,8 @@ import com.example.knot_server.util.GeoHashUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,10 +52,10 @@ public class MapPostServiceImpl implements MapPostService {
     LocalDateTime now = LocalDateTime.now();
 
     // 1. 参数校验
-    validateRequest(req);
+    validateRequest_helper(req);
 
     // 2. 确定可见成员列表
-    List<Long> memberIds = determineMemberIds(creatorId, req);
+    List<Long> memberIds = determineMemberIds_helper(creatorId, req);
 
     // 3. 创建 conversation (评论区)
     Conversation conv = new Conversation();
@@ -94,6 +100,7 @@ public class MapPostServiceImpl implements MapPostService {
     mapPost.setCreatorId(creatorId);
     mapPost.setTitle(req.getTitle());
     mapPost.setDescription(req.getDescription());
+    mapPost.setPostType(MapPost.PostType.valueOf(req.getPostType().toUpperCase()));
 
     // 媒体URL转JSON
     if (req.getMediaUrls() != null && req.getMediaUrls().length > 0) {
@@ -147,9 +154,9 @@ public class MapPostServiceImpl implements MapPostService {
   }
 
   /**
-   * 验证请求参数
+   * 验证请求参数 (helper function for createFromWebSocket)
    */
-  private void validateRequest(WsCreateMapPost req) {
+  private void validateRequest_helper(WsCreateMapPost req) {
     if (req.getTitle() == null || req.getTitle().trim().isEmpty()) {
       throw new IllegalArgumentException("Title is required");
     }
@@ -179,8 +186,9 @@ public class MapPostServiceImpl implements MapPostService {
 
   /**
    * 根据可见范围确定成员列表
+   * (helper function for createFromWebSocket)
    */
-  private List<Long> determineMemberIds(Long creatorId, WsCreateMapPost req) {
+  private List<Long> determineMemberIds_helper(Long creatorId, WsCreateMapPost req) {
     if (req.getAllFriends()) {
       // 查询创建者的所有好友
       List<Long> friendIds = friendService.listFriends(creatorId).stream()
@@ -209,6 +217,239 @@ public class MapPostServiceImpl implements MapPostService {
       log.info("[MAP_POST] allFriends=false, specified {} members", result.size());
       return result;
     }
+  }
+
+  @Override
+  public List<NearbyPostResponse> getNearbyPosts(NearbyPostRequest req, Long currentUserId) {
+    log.info("[NEARBY] Query from user={}, zoom={}, center=({},{})",
+        currentUserId, req.getZoomLevel(), req.getLat(), req.getLng());
+
+    // 1. 参数校验
+    if (req.getLat() == null || req.getLng() == null || req.getZoomLevel() == null) {
+      throw new IllegalArgumentException("lat, lng, zoomLevel are required");
+    }
+
+    // 2. 根据zoom level确定查询策略
+    QueryStrategy strategy = determineStrategy(req.getZoomLevel());
+
+    // 3. 计算用户位置的GeoHash前缀
+    String userGeohash = GeoHashUtil.encode(req.getLat(), req.getLng(), 7);
+    String geohashPrefix = userGeohash.substring(0, strategy.prefixLength);
+
+    log.info("[NEARBY] GeoHash strategy: prefix={}, prefixLength={}, maxResults={}",
+        geohashPrefix, strategy.prefixLength, strategy.maxResults);
+
+    // 4. 数据库查询（粗筛）
+    LambdaQueryWrapper<MapPost> queryWrapper = new LambdaQueryWrapper<MapPost>()
+        .likeRight(MapPost::getGeohash, geohashPrefix) // GeoHash前缀匹配
+        .eq(MapPost::getStatus, 1) // 只查已发布的
+        .ge(MapPost::getCreatedAt, getTimeRangeStart(req.getTimeRange())); // 时间过滤
+
+    // 如果指定了postType（非ALL），添加过滤
+    if (req.getPostType() != null && !"ALL".equalsIgnoreCase(req.getPostType())) {
+      try {
+        MapPost.PostType postType = MapPost.PostType.valueOf(req.getPostType().toUpperCase());
+        queryWrapper.eq(MapPost::getPostType, postType);
+      } catch (IllegalArgumentException e) {
+        log.warn("[NEARBY] Invalid postType: {}", req.getPostType());
+      }
+    }
+
+    // 按创建时间倒序，限制查询数量
+    queryWrapper.orderByDesc(MapPost::getCreatedAt).last("LIMIT " + strategy.maxResults);
+
+    List<MapPost> candidates = mapPostMapper.selectList(queryWrapper);
+    log.info("[NEARBY] Found {} candidates from database", candidates.size());
+
+    // 5. 精确过滤 + 构建Response
+    List<NearbyPostResponse> results = candidates.stream()
+        .filter(post -> {
+          // 5.1 检查是否在视野边界内
+          return isInBounds(post, req.getBounds());
+        })
+        .filter(post -> {
+          // 5.2 权限检查：用户必须在conversation_members里
+          long count = conversationMemberMapper.selectCount(
+              new LambdaQueryWrapper<ConversationMember>()
+                  .eq(ConversationMember::getConvId, post.getConvId())
+                  .eq(ConversationMember::getUserId, currentUserId));
+          return count > 0;
+        })
+        .map(post -> {
+          // 5.3 计算精确距离
+          double distance = GeoHashUtil.calculateDistance(
+              req.getLat(), req.getLng(),
+              post.getLocLat(), post.getLocLng());
+
+          // 5.4 构建Response对象
+          return buildResponse(post, distance, currentUserId);
+        })
+        .sorted(Comparator.comparing(NearbyPostResponse::getDistance)) // 按距离排序
+        .collect(Collectors.toList());
+
+    log.info("[NEARBY] After filtering, {} posts remain", results.size());
+
+    // 6. 根据策略采样（如果需要）
+    if (strategy.needsSampling && results.size() > strategy.targetCount) {
+      results = samplePosts(results, strategy.targetCount);
+      log.info("[NEARBY] Sampled to {} posts", results.size());
+    }
+
+    // 7. 限制最大返回数量
+    int maxResults = Math.min(req.getMaxResults(), 100);
+    if (results.size() > maxResults) {
+      results = results.subList(0, maxResults);
+    }
+
+    log.info("[NEARBY] Returning {} posts to client", results.size());
+    return results;
+  }
+
+  // ========== 辅助方法（Helper Methods） ==========
+
+  /**
+   * 查询策略内部类
+   */
+  @Data
+  @AllArgsConstructor
+  private static class QueryStrategy {
+    int prefixLength; // GeoHash前缀长度
+    int maxResults; // 查询上限
+    int targetCount; // 期望返回数量
+    boolean needsSampling; // 是否需要采样
+  }
+
+  /**
+   * 根据Zoom Level确定查询策略
+   * MapBox Zoom Level参考：
+   * - 0-3: 世界级别
+   * - 4-6: 国家级别
+   * - 7-10: 城市级别
+   * - 11-14: 街区级别
+   * - 15-18: 街道级别
+   * - 19-22: 建筑级别
+   */
+  private QueryStrategy determineStrategy(Integer zoomLevel) {
+    if (zoomLevel == null) {
+      zoomLevel = 12; // 默认街区级别
+    }
+
+    if (zoomLevel >= 16) {
+      // 街道级别：返回所有，不采样
+      return new QueryStrategy(7, 100, 100, false);
+    } else if (zoomLevel >= 13) {
+      // 街区级别：适度采样
+      return new QueryStrategy(6, 200, 50, true);
+    } else if (zoomLevel >= 10) {
+      // 城市级别：大量采样
+      return new QueryStrategy(5, 500, 30, true);
+    } else {
+      // 国家/世界级别：只返回热门posts
+      return new QueryStrategy(4, 1000, 20, true);
+    }
+  }
+
+  /**
+   * 根据时间范围计算起始时间
+   */
+  private LocalDateTime getTimeRangeStart(String timeRange) {
+    LocalDateTime now = LocalDateTime.now();
+    switch (timeRange) {
+      case "1D":
+        return now.minusDays(1);
+      case "7D":
+        return now.minusDays(7);
+      case "30D":
+        return now.minusDays(30);
+      default:
+        return now.minusDays(7); // 默认7天
+    }
+  }
+
+  /**
+   * 检查post是否在视野边界内
+   */
+  private boolean isInBounds(MapPost post, NearbyPostRequest.BoundingBox bounds) {
+    if (bounds == null) {
+      return true; // 没有提供bounds，不过滤
+    }
+
+    double lat = post.getLocLat();
+    double lng = post.getLocLng();
+
+    return lat <= bounds.getNorthEastLat()
+        && lat >= bounds.getSouthWestLat()
+        && lng <= bounds.getNorthEastLng()
+        && lng >= bounds.getSouthWestLng();
+  }
+
+  /**
+   * 智能采样：优先保留热门/最新的posts
+   */
+  private List<NearbyPostResponse> samplePosts(List<NearbyPostResponse> posts, int targetCount) {
+    if (posts.size() <= targetCount) {
+      return posts;
+    }
+
+    // 按综合评分排序：点赞数 * 2 + 评论数 * 3 - 时间衰减
+    return posts.stream()
+        .sorted((a, b) -> {
+          long scoreA = a.getLikeCount() * 2L + a.getCommentCount() * 3L;
+          long scoreB = b.getLikeCount() * 2L + b.getCommentCount() * 3L;
+
+          // 时间衰减：越新的分数越高（每小时减1分）
+          long ageA = System.currentTimeMillis() - a.getCreatedAtMs();
+          long ageB = System.currentTimeMillis() - b.getCreatedAtMs();
+          scoreA -= ageA / (1000 * 60 * 60);
+          scoreB -= ageB / (1000 * 60 * 60);
+
+          return Long.compare(scoreB, scoreA); // 降序
+        })
+        .limit(targetCount)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * 构建Response对象
+   */
+  private NearbyPostResponse buildResponse(MapPost post, double distance, Long currentUserId) {
+    // 查询创建者信息
+    User creator = userMapper.selectById(post.getCreatorId());
+
+    // 解析mediaUrls
+    String[] mediaUrls = null;
+    if (post.getMediaJson() != null && !post.getMediaJson().isEmpty()) {
+      try {
+        mediaUrls = objectMapper.readValue(post.getMediaJson(), String[].class);
+      } catch (Exception e) {
+        log.warn("[NEARBY] Failed to parse mediaJson for mapPostId={}", post.getMapPostId());
+      }
+    }
+
+    // 计算创建时间戳
+    long createdAtMs = post.getCreatedAt() != null
+        ? post.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        : System.currentTimeMillis();
+
+    return NearbyPostResponse.builder()
+        .mapPostId(post.getMapPostId())
+        .convId(post.getConvId())
+        .title(post.getTitle())
+        .description(post.getDescription())
+        .mediaUrls(mediaUrls)
+        .locLat(post.getLocLat())
+        .locLng(post.getLocLng())
+        .locName(post.getLocName())
+        .distance(distance)
+        .creatorId(post.getCreatorId())
+        .creatorUsername(creator != null ? creator.getUsername() : "Unknown")
+        .creatorAvatar(creator != null ? creator.getAvatarUrl() : null)
+        .viewCount(post.getViewCount())
+        .likeCount(post.getLikeCount())
+        .commentCount(post.getCommentCount())
+        .postType(post.getPostType().name())
+        .createdAtMs(createdAtMs)
+        .build();
   }
 
 }

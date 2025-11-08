@@ -11,12 +11,13 @@ package com.example.knot_server.util;
  * - 8位: ±0.019km (19m)
  */
 public class GeoHashUtil {
-    
+
     private static final String BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
-    
+
     /**
      * 将经纬度编码为GeoHash
-     * @param latitude 纬度 (-90, 90)
+     * 
+     * @param latitude  纬度 (-90, 90)
      * @param longitude 经度 (-180, 180)
      * @param precision 精度位数（建议6-8）
      * @return GeoHash字符串
@@ -31,9 +32,9 @@ public class GeoHashUtil {
         if (precision < 1 || precision > 12) {
             throw new IllegalArgumentException("Precision must be between 1 and 12");
         }
-        
-        double[] latRange = {-90.0, 90.0};
-        double[] lonRange = {-180.0, 180.0};
+
+        double[] latRange = { -90.0, 90.0 };
+        double[] lonRange = { -180.0, 180.0 };
         StringBuilder geohash = new StringBuilder();
         boolean isEven = true;
         int bit = 0;
@@ -61,7 +62,7 @@ public class GeoHashUtil {
                 }
             }
             isEven = !isEven;
-            
+
             if (bit < 4) {
                 bit++;
             } else {
@@ -70,8 +71,36 @@ public class GeoHashUtil {
                 ch = 0;
             }
         }
-        
+
         return geohash.toString();
     }
-}
 
+    /**
+     * 使用Haversine公式计算两点间的距离
+     * 
+     * @param lat1 起点纬度
+     * @param lng1 起点经度
+     * @param lat2 终点纬度
+     * @param lng2 终点经度
+     * @return 距离（米）
+     */
+    public static double calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+        final int EARTH_RADIUS = 6371000; // 地球半径（米）
+
+        // 将角度转换为弧度
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double radLat1 = Math.toRadians(lat1);
+        double radLat2 = Math.toRadians(lat2);
+
+        // Haversine公式
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(radLat1) * Math.cos(radLat2)
+                        * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return EARTH_RADIUS * c; // 返回距离（米）
+    }
+
+}

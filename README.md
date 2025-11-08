@@ -466,6 +466,256 @@ When a Map Post is created:
 
 ---
 
+#### 6. Query Nearby Map Posts
+
+The query API uses **GeoHash-based spatial indexing** with zoom-level adaptive strategies to efficiently retrieve nearby posts.
+
+##### 6.1 Create Test Data
+
+Before testing queries, create some sample posts at different locations via WebSocket:
+
+**Post 1 - 三里屯 (Central location)**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-001",
+  "title": "Sanlitun Coffee Shop",
+  "description": "Amazing latte ☕",
+  "mediaUrls": [],
+  "loc": {
+    "lat": 39.9342,
+    "lng": 116.4478,
+    "name": "Sanlitun SOHO"
+  },
+  "allFriends": true,
+  "memberIds": [],
+  "postType": "ALL"
+}
+```
+
+**Post 2 - 工人体育场 (356m away)**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-002",
+  "title": "Gongti Hot Pot",
+  "description": "Spicy hot pot 🔥",
+  "mediaUrls": [],
+  "loc": {
+    "lat": 39.9268,
+    "lng": 116.4476,
+    "name": "Workers Stadium"
+  },
+  "allFriends": true,
+  "memberIds": [],
+  "postType": "REQUEST"
+}
+```
+
+**Post 3 - 朝阳公园 (3.5km away)**:
+```json
+{
+  "type": "MAP_POST_CREATE",
+  "clientReqId": "test-003",
+  "title": "Chaoyang Park Music Festival",
+  "description": "Weekend concert 🎵",
+  "mediaUrls": [],
+  "loc": {
+    "lat": 39.9342,
+    "lng": 116.4800,
+    "name": "Chaoyang Park"
+  },
+  "allFriends": true,
+  "memberIds": [],
+  "postType": "COMMENT"
+}
+```
+
+##### 6.2 Query API Endpoint
+
+**Endpoint**: `POST /api/mapPost/nearby`
+
+**Request Body**:
+```json
+{
+  "lat": 39.9300,           // Query center latitude (required)
+  "lng": 116.4477,          // Query center longitude (required)
+  "zoomLevel": 12,          // MapBox zoom level (0-22, required)
+  "bounds": {               // Optional: viewport bounding box for precise filtering
+    "northEastLat": 39.9400,
+    "northEastLng": 116.4600,
+    "southWestLat": 39.9200,
+    "southWestLng": 116.4300
+  },
+  "timeRange": "7D",        // Time filter: "1D"/"7D"/"30D" (default: 7D)
+  "postType": "ALL",        // Post type filter: "ALL"/"REQUEST"/"COMMENT" (default: ALL)
+  "maxResults": 100         // Max results to return (default: 100, max: 100)
+}
+```
+
+##### 6.3 Zoom Level Effects
+
+The query system uses **GeoHash prefix matching** with adaptive precision based on zoom level:
+
+| Zoom Level | Precision | Range | Query Behavior | Use Case |
+|------------|-----------|-------|----------------|----------|
+| 5-9 (City) | ±2.4km | Wide | Returns ~20 posts, sampled by popularity | City overview |
+| 10-12 (District) | ±600m | Medium | Returns ~30 posts, moderate sampling | District view |
+| 13-15 (Neighborhood) | ±600m | Medium | Returns ~50 posts, light sampling | Neighborhood |
+| 16+ (Street) | ±76m | Narrow | Returns all posts, no sampling | Street-level detail |
+
+**Test Query with zoom=12 (District level)**:
+```bash
+curl -X POST http://localhost:8080/api/mapPost/nearby \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "lat": 39.9300,
+    "lng": 116.4477,
+    "zoomLevel": 12,
+    "timeRange": "7D",
+    "postType": "ALL",
+    "maxResults": 100
+  }'
+```
+
+**Expected Response (2 posts within ~600m)**:
+```json
+{
+  "success": true,
+  "message": "附近帖子获取成功",
+  "data": [
+    {
+      "mapPostId": 2,
+      "convId": 9,
+      "title": "Gongti Hot Pot",
+      "description": "Spicy hot pot 🔥",
+      "distance": 355.92,    // Distance in meters (sorted by distance)
+      "locLat": 39.9268,
+      "locLng": 116.4476,
+      "creatorUsername": "user1",
+      "viewCount": 0,
+      "likeCount": 0,
+      "postType": "REQUEST",
+      "createdAtMs": 1699999999000
+    },
+    {
+      "mapPostId": 1,
+      "title": "Sanlitun Coffee Shop",
+      "distance": 467.09,
+      "postType": "ALL",
+      ...
+    }
+  ]
+}
+```
+
+**Test Query with zoom=5 (City level)**:
+```bash
+curl -X POST http://localhost:8080/api/mapPost/nearby \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "lat": 39.9300,
+    "lng": 116.4477,
+    "zoomLevel": 5,
+    "timeRange": "7D",
+    "postType": "ALL",
+    "maxResults": 100
+  }'
+```
+
+**Expected Response (3 posts, including distant ones)**:
+```json
+{
+  "success": true,
+  "message": "附近帖子获取成功",
+  "data": [
+    {
+      "mapPostId": 2,
+      "distance": 355.92,
+      ...
+    },
+    {
+      "mapPostId": 1,
+      "distance": 467.09,
+      ...
+    },
+    {
+      "mapPostId": 3,
+      "title": "Chaoyang Park Music Festival",
+      "distance": 3512.45,   // 3.5km away, only visible at zoom=5
+      "postType": "COMMENT",
+      ...
+    }
+  ]
+}
+```
+
+##### 6.4 Filter by Post Type
+
+Query only specific post types:
+
+```bash
+curl -X POST http://localhost:8080/api/mapPost/nearby \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "lat": 39.9300,
+    "lng": 116.4477,
+    "zoomLevel": 12,
+    "postType": "REQUEST",
+    "timeRange": "7D",
+    "maxResults": 100
+  }'
+```
+
+> **Note**: Only returns posts where `postType = "REQUEST"` (e.g., Post 2: "Gongti Hot Pot")
+
+##### 6.5 Understanding GeoHash Precision
+
+The system uses **GeoHash** for efficient spatial queries:
+
+- **Higher zoom (16-22)**: Uses 7-character GeoHash prefix (±76m precision) - returns posts in immediate vicinity
+- **Medium zoom (10-15)**: Uses 6-character prefix (±600m) - returns posts in neighborhood
+- **Lower zoom (5-9)**: Uses 4-5 character prefix (±2-20km) - returns posts across city
+
+**Why different zoom levels return different results?**
+
+GeoHash divides Earth into a grid. A 7-character prefix (zoom=18) matches a very small area (~76m radius), while a 5-character prefix (zoom=10) matches a much larger area (~2.4km radius). This ensures:
+- **Zoomed in**: See all nearby details
+- **Zoomed out**: Avoid overwhelming the map with thousands of markers
+
+##### 6.6 Frontend Integration (Kotlin + MapBox Example)
+
+```kotlin
+mapboxMap.addOnCameraIdleListener {
+    val center = mapboxMap.cameraPosition.target
+    val zoom = mapboxMap.cameraPosition.zoom.toInt()
+    
+    val request = NearbyPostRequest(
+        lat = center.latitude,
+        lng = center.longitude,
+        zoomLevel = zoom,  // Automatically adapts query range
+        timeRange = "7D",
+        postType = "ALL",
+        maxResults = 100
+    )
+    
+    apiService.getNearbyPosts(request).enqueue { response ->
+        markerManager.clear()
+        response.body()?.data?.forEach { post ->
+            markerManager.addMarker(
+                LatLng(post.locLat, post.locLng),
+                post.title
+            )
+        }
+    }
+}
+```
+
+---
+
 ## Stopping the Environment
 
 ```bash

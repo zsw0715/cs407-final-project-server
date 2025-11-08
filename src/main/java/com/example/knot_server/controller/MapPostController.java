@@ -1,0 +1,36 @@
+package com.example.knot_server.controller;
+
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+
+import com.example.knot_server.controller.dto.ApiResponse;
+import com.example.knot_server.controller.dto.NearbyPostRequest;
+import com.example.knot_server.controller.dto.NearbyPostResponse;
+import com.example.knot_server.service.MapPostService;
+import com.example.knot_server.util.JwtAuthFilter;
+
+import lombok.RequiredArgsConstructor;
+
+@RestController
+@RequestMapping("/api/mapPost")
+@RequiredArgsConstructor
+public class MapPostController {
+  private final MapPostService mps;
+
+  @PostMapping("/nearby")
+  public ResponseEntity<ApiResponse<List<NearbyPostResponse>>> getNearbyPosts(
+      @RequestBody NearbyPostRequest req,
+      Authentication auth) {
+    JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+    Long currentUserId = principal.uid();
+    List<NearbyPostResponse> nearbyPosts = mps.getNearbyPosts(req, currentUserId);
+    return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("附近帖子获取成功", nearbyPosts));
+  }
+}
