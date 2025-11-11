@@ -18,6 +18,7 @@ import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.MapPost;
+import com.example.knot_server.entity.MapPostLike;
 import com.example.knot_server.entity.User;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
@@ -561,9 +562,9 @@ public class MapPostServiceImpl implements MapPostService {
 
     // 4. 检查当前用户是否点赞了这个帖子
     long likeCount = mapPostLikeMapper.selectCount(
-        new LambdaQueryWrapper<com.example.knot_server.entity.MapPostLike>()
-            .eq(com.example.knot_server.entity.MapPostLike::getMapPostId, mapPostId)
-            .eq(com.example.knot_server.entity.MapPostLike::getUserId, currentUserId));
+        new LambdaQueryWrapper<MapPostLike>()
+            .eq(MapPostLike::getMapPostId, mapPostId)
+            .eq(MapPostLike::getUserId, currentUserId));
     boolean isLikedByCurrentUser = likeCount > 0;
 
     // 5. 增加浏览数（排除作者自己）
