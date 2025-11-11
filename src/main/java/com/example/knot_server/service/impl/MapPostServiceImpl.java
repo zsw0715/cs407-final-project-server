@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.knot_server.controller.dto.NearbyPostRequest;
+import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
@@ -305,7 +306,78 @@ public class MapPostServiceImpl implements MapPostService {
     return results;
   }
 
+  @Override
+  public List<NearbyPostResponse> getNearbyPostsV2(NearbyPostRequestV2 req, Long currentUserId) {
+    log.info("[NEARBY_V2] Simple query from user={}, center=({},{}), radius={}m",
+        currentUserId, req.getLat(), req.getLng(), req.getRadius());
+
+    // 1. 参数校验
+    if (req.getLat() == null || req.getLng() == null) {
+      throw new IllegalArgumentException("lat and lng are required");
+    }
+
+    // 2. 查询数据库：获取所有符合条件的posts（不用GeoHash）
+    LambdaQueryWrapper<MapPost> queryWrapper = new LambdaQueryWrapper<MapPost>()
+        .eq(MapPost::getStatus, 1)  // 已发布
+        .ge(MapPost::getCreatedAt, getTimeRangeStart(req.getTimeRange()));  // 时间过滤
+
+    // postType过滤
+    if (req.getPostType() != null && !"ALL".equalsIgnoreCase(req.getPostType())) {
+      try {
+        MapPost.PostType postType = MapPost.PostType.valueOf(req.getPostType().toUpperCase());
+        queryWrapper.eq(MapPost::getPostType, postType);
+      } catch (IllegalArgumentException e) {
+        log.warn("[NEARBY_V2] Invalid postType: {}", req.getPostType());
+      }
+    }
+
+    // 限制查询数量，避免全表扫描
+    queryWrapper.last("LIMIT 1000");
+
+    List<MapPost> allPosts = mapPostMapper.selectList(queryWrapper);
+    log.info("[NEARBY_V2] Found {} posts from database", allPosts.size());
+
+    // 3. 计算距离 + 权限过滤 + 半径过滤
+    List<NearbyPostResponse> results = allPosts.stream()
+        .filter(post -> {
+          // 权限检查
+          long count = conversationMemberMapper.selectCount(
+              new LambdaQueryWrapper<ConversationMember>()
+                  .eq(ConversationMember::getConvId, post.getConvId())
+                  .eq(ConversationMember::getUserId, currentUserId));
+          return count > 0;
+        })
+        .map(post -> {
+          // 计算距离
+          double distance = GeoHashUtil.calculateDistance(
+              req.getLat(), req.getLng(),
+              post.getLocLat(), post.getLocLng());
+          return new PostWithDistance(post, distance);
+        })
+        .filter(pwd -> pwd.distance <= req.getRadius())  // 半径过滤
+        .sorted(Comparator.comparing(pwd -> pwd.distance))  // 按距离排序
+        .limit(req.getMaxResults())
+        .map(pwd -> buildResponse(pwd.post, pwd.distance, currentUserId))
+        .collect(Collectors.toList());
+
+    log.info("[NEARBY_V2] Returning {} posts within {}m radius", results.size(), req.getRadius());
+    return results;
+  }
+
   // ========== 辅助方法（Helper Methods） ==========
+
+  /**
+   * 辅助类：Post + Distance（用于V2）
+   */
+  private static class PostWithDistance {
+    MapPost post;
+    double distance;
+
+    PostWithDistance(MapPost post, double distance) {
+      this.post = post;
+      this.distance = distance;
+    }
+  }
 
   /**
    * 查询策略内部类

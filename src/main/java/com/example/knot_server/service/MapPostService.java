@@ -3,6 +3,7 @@ package com.example.knot_server.service;
 import java.util.List;
 
 import com.example.knot_server.controller.dto.NearbyPostRequest;
+import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.netty.server.model.WsCreateMapPost;
 import com.example.knot_server.service.dto.MapPostCreatedResult;
@@ -21,10 +22,18 @@ public interface MapPostService {
     MapPostCreatedResult createFromWebSocket(Long creatorId, WsCreateMapPost req);
 
     /**
-     * 获取附近的地图帖子
+     * 获取附近的地图帖子（V1: GeoHash-based）
      * @param req 请求参数
      * @param currentUserId 当前用户ID
      * @return 地图帖子列表
      */
     List<NearbyPostResponse> getNearbyPosts(NearbyPostRequest req, Long currentUserId);
+
+    /**
+     * 获取附近的地图帖子（V2: 简化版，radius-based）
+     * @param req 请求参数
+     * @param currentUserId 当前用户ID
+     * @return 地图帖子列表
+     */
+    List<NearbyPostResponse> getNearbyPostsV2(NearbyPostRequestV2 req, Long currentUserId);
 }

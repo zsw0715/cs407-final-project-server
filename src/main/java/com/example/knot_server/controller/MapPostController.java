@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 
 import com.example.knot_server.controller.dto.ApiResponse;
 import com.example.knot_server.controller.dto.NearbyPostRequest;
+import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.service.MapPostService;
 import com.example.knot_server.util.JwtAuthFilter;
@@ -32,5 +33,18 @@ public class MapPostController {
     Long currentUserId = principal.uid();
     List<NearbyPostResponse> nearbyPosts = mps.getNearbyPosts(req, currentUserId);
     return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("附近帖子获取成功", nearbyPosts));
+  }
+
+  /**
+   * V2: 简化版查询附近posts，不使用GeoHash，直接计算距离
+   */
+  @PostMapping("/v2/nearby")
+  public ResponseEntity<ApiResponse<List<NearbyPostResponse>>> getNearbyPostsV2(
+      @RequestBody NearbyPostRequestV2 req,
+      Authentication auth) {
+    JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+    Long currentUserId = principal.uid();
+    List<NearbyPostResponse> nearbyPosts = mps.getNearbyPostsV2(req, currentUserId);
+    return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("附近帖子获取成功(V2)", nearbyPosts));
   }
 }
