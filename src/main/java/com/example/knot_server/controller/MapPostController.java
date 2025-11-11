@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.core.Authentication;
 
 import com.example.knot_server.controller.dto.ApiResponse;
+import com.example.knot_server.controller.dto.MapPostDetailResponse;
 import com.example.knot_server.controller.dto.NearbyPostRequest;
 import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
@@ -47,4 +50,22 @@ public class MapPostController {
     List<NearbyPostResponse> nearbyPosts = mps.getNearbyPostsV2(req, currentUserId);
     return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("附近帖子获取成功(V2)", nearbyPosts));
   }
+
+  /**
+   * 获取帖子详情使用 mapPostId
+   * 返回帖子基本信息、作者信息、统计数据等
+   * 评论列表需要前端调用 /api/conversation/messages 接口获取（使用返回的convId）
+   */
+  @GetMapping("/{mapPostId}")
+  public ResponseEntity<ApiResponse<MapPostDetailResponse>> getMapPostDetail(
+      @PathVariable Long mapPostId,
+      Authentication auth
+    ) {
+    JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+    Long currentUserId = principal.uid();
+    MapPostDetailResponse mapPostDetail = mps.getMapPostDetailByMapPostId(mapPostId, currentUserId);
+    return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("帖子详情获取成功", mapPostDetail));
+  }
+
 }
+

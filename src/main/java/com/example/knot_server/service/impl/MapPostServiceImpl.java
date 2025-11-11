@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.example.knot_server.controller.dto.MapPostDetailResponse;
 import com.example.knot_server.controller.dto.NearbyPostRequest;
 import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
@@ -20,6 +21,7 @@ import com.example.knot_server.entity.MapPost;
 import com.example.knot_server.entity.User;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
+import com.example.knot_server.mapper.MapPostLikeMapper;
 import com.example.knot_server.mapper.MapPostMapper;
 import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.netty.server.model.WsCreateMapPost;
@@ -41,6 +43,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MapPostServiceImpl implements MapPostService {
   private final MapPostMapper mapPostMapper;
+  private final MapPostLikeMapper mapPostLikeMapper;
   private final ConversationMapper conversationMapper;
   private final ConversationMemberMapper conversationMemberMapper;
   private final UserMapper userMapper;
@@ -522,6 +525,90 @@ public class MapPostServiceImpl implements MapPostService {
         .postType(post.getPostType().name())
         .createdAtMs(createdAtMs)
         .build();
+  }
+
+  /**
+   * 根据 mapPostId 获取帖子详情
+   * @param mapPostId 帖子ID
+   * @param currentUserId 当前用户ID
+   * @return 帖子详情
+   */
+  @Override
+  public MapPostDetailResponse getMapPostDetailByMapPostId(Long mapPostId, Long currentUserId) {
+    log.info("[MAP_POST_DETAIL] User {} requesting detail for mapPostId={}", currentUserId, mapPostId);
+
+    // 1. 查询map_posts表
+    MapPost post = mapPostMapper.selectById(mapPostId);
+    if (post == null) {
+      throw new IllegalArgumentException("Map post not found: " + mapPostId);
+    }
+
+    // 2. 检查权限：用户是否在conversation_members中
+    long memberCount = conversationMemberMapper.selectCount(
+        new LambdaQueryWrapper<ConversationMember>()
+            .eq(ConversationMember::getConvId, post.getConvId())
+            .eq(ConversationMember::getUserId, currentUserId));
+
+    if (memberCount == 0) {
+      throw new RuntimeException("无权访问该帖子");
+    }
+
+    // 3. 查询作者信息
+    User creator = userMapper.selectById(post.getCreatorId());
+    if (creator == null) {
+      throw new RuntimeException("作者信息不存在");
+    }
+
+    // 4. 检查当前用户是否点赞了这个帖子
+    long likeCount = mapPostLikeMapper.selectCount(
+        new LambdaQueryWrapper<com.example.knot_server.entity.MapPostLike>()
+            .eq(com.example.knot_server.entity.MapPostLike::getMapPostId, mapPostId)
+            .eq(com.example.knot_server.entity.MapPostLike::getUserId, currentUserId));
+    boolean isLikedByCurrentUser = likeCount > 0;
+
+    // 5. 增加浏览数（排除作者自己）
+    if (!currentUserId.equals(post.getCreatorId())) {
+      post.setViewCount(post.getViewCount() + 1);
+      mapPostMapper.updateById(post);
+      log.info("[MAP_POST_DETAIL] View count incremented for mapPostId={}", mapPostId);
+    }
+
+    // 6. 解析mediaUrls（从JSON字符串转为List）
+    List<String> mediaUrls = null;
+    if (post.getMediaJson() != null && !post.getMediaJson().isEmpty()) {
+      try {
+        // 假设mediaJson格式为 ["url1","url2"]
+        mediaUrls = objectMapper.readValue(post.getMediaJson(), 
+            objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+      } catch (Exception e) {
+        log.warn("[MAP_POST_DETAIL] Failed to parse mediaJson for mapPostId={}", mapPostId, e);
+        mediaUrls = List.of(); // 返回空列表
+      }
+    }
+
+    // 7. 组装返回对象
+    MapPostDetailResponse response = MapPostDetailResponse.builder()
+        .mapPostId(post.getMapPostId())
+        .convId(post.getConvId())
+        .title(post.getTitle())
+        .description(post.getDescription())
+        .mediaUrls(mediaUrls)
+        .creatorId(post.getCreatorId())
+        .creatorUsername(creator.getUsername())
+        .creatorAvatar(creator.getAvatarUrl())
+        .locLat(post.getLocLat())
+        .locLng(post.getLocLng())
+        .locName(post.getLocName())
+        .viewCount(post.getViewCount() + (currentUserId.equals(post.getCreatorId()) ? 0 : 1)) // 显示增加后的值
+        .likeCount(post.getLikeCount())
+        .commentCount(post.getCommentCount())
+        .createdAtMs(post.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli())
+        .postType(post.getPostType().name())
+        .isLikedByCurrentUser(isLikedByCurrentUser)
+        .build();
+
+    log.info("[MAP_POST_DETAIL] Returning detail for mapPostId={}", mapPostId);
+    return response;
   }
 
 }
