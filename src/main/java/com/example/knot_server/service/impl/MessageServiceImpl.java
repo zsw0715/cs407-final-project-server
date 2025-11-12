@@ -13,11 +13,13 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.Friends;
+import com.example.knot_server.entity.MapPost;
 import com.example.knot_server.entity.Message;
 import com.example.knot_server.entity.MessageReceipt;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
 import com.example.knot_server.mapper.FriendsMapper;
+import com.example.knot_server.mapper.MapPostMapper;
 import com.example.knot_server.mapper.MessageMapper;
 import com.example.knot_server.mapper.MessageReceiptMapper;
 import com.example.knot_server.netty.server.model.WsSendMessage;
@@ -35,6 +37,7 @@ public class MessageServiceImpl implements MessageService {
         private final ConversationMapper conversationMapper;
         private final MessageReceiptMapper messageReceiptMapper;
         private final FriendsMapper friendsMapper;
+        private final MapPostMapper mapPostMapper;
 
         @Override
         @Transactional(rollbackFor = Exception.class)
@@ -94,6 +97,21 @@ public class MessageServiceImpl implements MessageService {
                         }
                 }
                 // 群聊（conv_type = 2）不需要检查好友关系
+
+                // 帖子 (conv_type = 3) 需要更细comment_count
+                if (conversation.getConvType() == 3) {
+                        // 根据当前会话ID，获取对应的帖子
+                        MapPost mapPost = mapPostMapper.selectOne(
+                                new LambdaQueryWrapper<MapPost>()
+                                        .eq(MapPost::getConvId, conversation.getConvId())
+                                        .last("LIMIT 1"));
+                        if (mapPost == null) {
+                                throw new IllegalArgumentException("Map post not found");
+                        }
+                        // 更新帖子评论数
+                        mapPost.setCommentCount(mapPost.getCommentCount() + 1);
+                        mapPostMapper.updateById(mapPost);
+                }
 
                 // 2) 幂等：按 (conv_id, client_msg_id)
                 Message existed = messageMapper.selectOne(

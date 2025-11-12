@@ -96,7 +96,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<TextWebSocketFra
             List<Long> recipients = saved.getReceiverUids();
             if (recipients != null) {
                 for (Long ruid : recipients) {
-                    if (ruid == null || ruid.equals(uid)) continue; // 可选：不推给自己
+                    // if (ruid == null || ruid.equals(uid)) continue; // 可选：不推给自己
                     try {
                         Channel ch = registry.byUid(ruid);
                         if (ch == null || !ch.isActive()) continue;   // 不在本机/离线，跳过
