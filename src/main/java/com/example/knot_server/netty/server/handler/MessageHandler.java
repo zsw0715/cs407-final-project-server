@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.netty.server.model.WsMessageAck;
 import com.example.knot_server.netty.server.model.WsMessageNew;
 import com.example.knot_server.netty.server.model.WsSendMessage;
@@ -30,12 +31,14 @@ public class MessageHandler extends SimpleChannelInboundHandler<TextWebSocketFra
     private final ObjectMapper om;
     private final MessageService messageService;
     private final LocalSessionRegistry registry;
+    private final ConversationMapper cm;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         String text = msg.text();
 
         WsSendMessage req;
+
         try {
             req = om.readValue(text, WsSendMessage.class);
         } catch (Exception parseEx) {
@@ -54,6 +57,15 @@ public class MessageHandler extends SimpleChannelInboundHandler<TextWebSocketFra
             ctx.writeAndFlush(new TextWebSocketFrame("{\"type\":\"ERROR\",\"msg\":\"not authed\"}"));
             return;
         }
+
+        // 根据 req.convId() 获得 对应的 convType
+        Long convId = req.getConvId();
+        var conv = cm.selectById(convId);
+        if (conv == null) {
+            ctx.writeAndFlush(new TextWebSocketFrame("{\"type\":\"ERROR\",\"msg\":\"invalid convId\"}"));
+            return;
+        }
+        var convType = conv.getConvType();
 
         try {
             // 1) 业务入库（含成员校验/幂等/更新会话），返回保存结果 + 会话成员列表
@@ -97,6 +109,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<TextWebSocketFra
             if (recipients != null) {
                 for (Long ruid : recipients) {
                     // if (ruid == null || ruid.equals(uid)) continue; // 可选：不推给自己
+                    // 注意！！！ 由于前端实现的不同。当 convType == 3 的时候需要推送给自己，当 convType !=3 的时候不推送给自己
+                    if (ruid == null || (ruid.equals(uid) && convType != 3)) continue;
                     try {
                         Channel ch = registry.byUid(ruid);
                         if (ch == null || !ch.isActive()) continue;   // 不在本机/离线，跳过
