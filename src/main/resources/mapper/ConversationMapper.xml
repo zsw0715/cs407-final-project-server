@@ -33,6 +33,7 @@
             ))
         WHERE c.creator_id = #{userId}
           OR cm.userid = #{userId}
+          AND c.conv_type IN (1, 2)
         ORDER BY c.updated_at DESC;
     </select>
 
