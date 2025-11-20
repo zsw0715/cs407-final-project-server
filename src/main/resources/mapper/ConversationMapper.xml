@@ -31,9 +31,7 @@
                 FROM conversation_members
                 WHERE conv_id = c.conv_id AND userid != #{userId} LIMIT 1
             ))
-        WHERE c.creator_id = #{userId}
-          OR cm.userid = #{userId}
-          AND c.conv_type IN (1, 2)
+        WHERE (c.creator_id = #{userId} OR cm.userid = #{userId}) AND c.conv_type IN (1, 2)
         ORDER BY c.updated_at DESC;
     </select>
 
