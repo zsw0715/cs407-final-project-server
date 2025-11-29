@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local config that may contain secrets (do not commit real values)
+src/main/resources/application.yml
+.env

@@ -32,3 +32,9 @@ app:
         refresh-days: 14
     netty:
         port: 10827
+
+aws:
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region: us-east-2
+    bucket: cs407-knot-image-hosting
