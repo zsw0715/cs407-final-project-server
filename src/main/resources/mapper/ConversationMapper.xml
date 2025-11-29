@@ -4,7 +4,7 @@
 
 <mapper namespace="com.example.knot_server.mapper.ConversationMapper">
 
-    <select id="listUserConversations" parameterType="long"
+    <!-- <select id="listUserConversations" parameterType="long"
             resultType="com.example.knot_server.controller.dto.ConversationSummaryResponse">
 
         SELECT DISTINCT
@@ -33,6 +33,77 @@
             ))
         WHERE (c.creator_id = #{userId} OR cm.userid = #{userId}) AND c.conv_type IN (1, 2)
         ORDER BY c.updated_at DESC;
+    </select> -->
+
+    <select id="listUserConversations" parameterType="long"
+        resultType="com.example.knot_server.controller.dto.ConversationSummaryResponse">
+
+    SELECT DISTINCT
+        c.conv_id,
+        c.conv_type,
+        c.title,
+        c.creator_id,
+
+        -- ⭐ 单聊：对方 userId
+        CASE
+            WHEN sci.user_min_id = #{userId} THEN sci.user_max_id
+            ELSE sci.user_min_id
+        END AS otherUserId,
+
+        -- ⭐ 单聊：对方昵称、头像
+        u2.nickname AS otherUserName,
+        u2.avatar_url AS otherUserAvatar,
+
+        -- ⭐ 自己的信息（新增）
+        uSelf.userid AS selfUserId,
+        uSelf.nickname AS selfUserName,
+        uSelf.avatar_url AS selfUserAvatar,
+
+        -- ⭐ 群聊字段
+        NULL AS groupAvatar,
+        NULL AS memberCount,
+
+        m.msg_type AS lastMsgType,
+        CASE
+            WHEN m.msg_type = 0 THEN m.content_text
+            WHEN m.msg_type = 1 THEN '[Image]'
+            WHEN m.msg_type = 2 THEN '[File]'
+            ELSE 'Say hi to your new friend!'
+        END AS lastMsgPreview,
+        m.created_at AS lastMsgTime,
+        c.updated_at
+
+    FROM conversations c
+
+    LEFT JOIN messages m
+        ON m.msg_id = c.last_msg_id
+
+    LEFT JOIN conversation_members cm
+        ON cm.conv_id = c.conv_id
+
+    LEFT JOIN single_conv_index sci
+        ON (c.conv_type = 1 AND sci.conv_id = c.conv_id)
+
+    -- ⭐ 对方用户
+    LEFT JOIN user u2
+        ON (
+        c.conv_type = 1
+        AND u2.userid = CASE
+                WHEN sci.user_min_id = #{userId} THEN sci.user_max_id
+                ELSE sci.user_min_id
+        END
+        )
+
+    -- ⭐ 自己的用户信息
+    LEFT JOIN user uSelf
+        ON uSelf.userid = #{userId}
+
+    WHERE
+        (c.creator_id = #{userId} OR cm.userid = #{userId})
+        AND c.conv_type IN (1, 2)
+
+    ORDER BY c.updated_at DESC;
+
     </select>
 
     <!-- 分页查询会话消息 -->
