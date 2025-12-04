@@ -8,6 +8,7 @@ import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
 import com.example.knot_server.netty.server.model.WsCreateMapPost;
 import com.example.knot_server.service.dto.MapPostCreatedResult;
+import com.example.knot_server.service.dto.MapPostLikeResult;
 
 /**
  * Map Post服务接口
@@ -45,4 +46,13 @@ public interface MapPostService {
      * @return 帖子详情
      */
     MapPostDetailResponse getMapPostDetailByMapPostId(Long mapPostId, Long currentUserId);
+
+    /**
+     * 处理点赞/取消点赞请求
+     * @param userId 当前用户
+     * @param mapPostId 帖子ID
+     * @param like true=点赞, false=取消点赞
+     * @return 点赞结果（包含最新统计与广播成员）
+     */
+    MapPostLikeResult handleLikeAction(Long userId, Long mapPostId, boolean like);
 }

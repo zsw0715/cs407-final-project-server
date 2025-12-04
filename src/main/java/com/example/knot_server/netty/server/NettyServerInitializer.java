@@ -8,6 +8,7 @@ import com.example.knot_server.netty.server.handler.FriendRequestHandler;
 import com.example.knot_server.netty.server.handler.HeartBeatHandler;
 import com.example.knot_server.netty.server.handler.LogoutHandler;
 import com.example.knot_server.netty.server.handler.MapPostHandler;
+import com.example.knot_server.netty.server.handler.MapPostLikeHandler;
 import com.example.knot_server.netty.server.handler.MessageHandler;
 
 import io.netty.channel.ChannelInitializer;
@@ -29,6 +30,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
     private final MessageHandler messageHandler;
     private final FriendRequestHandler friendRequestHandler;
     private final MapPostHandler mapPostHandler;
+    private final MapPostLikeHandler mapPostLikeHandler;
 
     public NettyServerInitializer(
                 AuthHandler authHandler, 
@@ -37,7 +39,8 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
                 HeartBeatHandler heartBeatHandler,
                 MessageHandler messageHandler,
                 FriendRequestHandler friendRequestHandler,
-                MapPostHandler mapPostHandler
+                MapPostHandler mapPostHandler,
+                MapPostLikeHandler mapPostLikeHandler
             ) {
         this.authHandler = authHandler;
         this.cleanupHandler = cleanupHandler;
@@ -46,6 +49,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         this.messageHandler = messageHandler;
         this.friendRequestHandler = friendRequestHandler;
         this.mapPostHandler = mapPostHandler;
+        this.mapPostLikeHandler = mapPostLikeHandler;
     }
 
     @Override
@@ -77,6 +81,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast("friendRequestHandler", friendRequestHandler);
         p.addLast("messageHandler", messageHandler);
         p.addLast("mapPostHandler", mapPostHandler);
+        p.addLast("mapPostLikeHandler", mapPostLikeHandler);
         p.addLast("logoutHandler", logoutHandler);
         p.addLast("cleanupHandler", cleanupHandler);
 

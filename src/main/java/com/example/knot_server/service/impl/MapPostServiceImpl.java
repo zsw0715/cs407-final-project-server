@@ -30,6 +30,7 @@ import com.example.knot_server.service.FriendService;
 import com.example.knot_server.service.MapPostService;
 import com.example.knot_server.service.dto.FriendView;
 import com.example.knot_server.service.dto.MapPostCreatedResult;
+import com.example.knot_server.service.dto.MapPostLikeResult;
 import com.example.knot_server.util.GeoHashUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -610,6 +611,66 @@ public class MapPostServiceImpl implements MapPostService {
 
     log.info("[MAP_POST_DETAIL] Returning detail for mapPostId={}", mapPostId);
     return response;
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public MapPostLikeResult handleLikeAction(Long userId, Long mapPostId, boolean like) {
+    MapPost mapPost = mapPostMapper.selectById(mapPostId);
+    if (mapPost == null || mapPost.getStatus() == null || mapPost.getStatus() != 1) {
+      throw new IllegalArgumentException("Map post not found");
+    }
+
+    long memberCount = conversationMemberMapper.selectCount(
+        new LambdaQueryWrapper<ConversationMember>()
+            .eq(ConversationMember::getConvId, mapPost.getConvId())
+            .eq(ConversationMember::getUserId, userId));
+    if (memberCount == 0) {
+      throw new IllegalArgumentException("无权操作该帖子");
+    }
+
+    boolean alreadyLiked = mapPostLikeMapper.selectCount(userLikeQuery(mapPostId, userId)) > 0;
+
+    if (like && !alreadyLiked) {
+      MapPostLike record = new MapPostLike();
+      record.setMapPostId(mapPostId);
+      record.setUserId(userId);
+      record.setCreatedAt(LocalDateTime.now());
+      mapPostLikeMapper.insert(record);
+    } else if (!like && alreadyLiked) {
+      mapPostLikeMapper.delete(userLikeQuery(mapPostId, userId));
+    }
+
+    int likeCount = Math.toIntExact(mapPostLikeMapper.selectCount(
+        new LambdaQueryWrapper<MapPostLike>()
+            .eq(MapPostLike::getMapPostId, mapPostId)));
+
+    mapPost.setLikeCount(likeCount);
+    mapPost.setUpdatedAt(LocalDateTime.now());
+    mapPostMapper.updateById(mapPost);
+
+    List<Long> memberIds = conversationMemberMapper.selectList(
+        new LambdaQueryWrapper<ConversationMember>()
+            .eq(ConversationMember::getConvId, mapPost.getConvId()))
+        .stream()
+        .map(ConversationMember::getUserId)
+        .collect(Collectors.toList());
+
+    boolean finalLiked = mapPostLikeMapper.selectCount(userLikeQuery(mapPostId, userId)) > 0;
+
+    return MapPostLikeResult.builder()
+        .mapPostId(mapPostId)
+        .convId(mapPost.getConvId())
+        .likeCount(likeCount)
+        .liked(finalLiked)
+        .memberIds(memberIds)
+        .build();
+  }
+
+  private LambdaQueryWrapper<MapPostLike> userLikeQuery(Long mapPostId, Long userId) {
+    return new LambdaQueryWrapper<MapPostLike>()
+        .eq(MapPostLike::getMapPostId, mapPostId)
+        .eq(MapPostLike::getUserId, userId);
   }
 
 }
