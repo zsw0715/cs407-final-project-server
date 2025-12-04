@@ -442,6 +442,46 @@ The Map Post system allows users to create location-based social posts that can 
 ```
 > **Response**: `{"type":"ERROR","msg":"Invalid latitude or longitude"}`
 
+#### 5. Map Post Like / Unlike
+
+After a post is created and both users are members of the corresponding conversation, any member can like or unlike the post via WebSocket.
+
+**Send like request** (from target member):
+```json
+{
+  "type": "MAP_POST_LIKE",
+  "clientReqId": "like-demo-001",
+  "mapPostId": 42,
+  "liked": true
+}
+```
+
+**Sender receives acknowledgment**:
+```json
+{
+  "type": "MAP_POST_LIKE_ACK",
+  "mapPostId": 42,
+  "liked": true,
+  "likeCount": 5,
+  "clientReqId": "like-demo-001",
+  "serverTime": 1699999999000
+}
+```
+
+**Other conversation members receive push update**:
+```json
+{
+  "type": "MAP_POST_LIKE_UPDATE",
+  "mapPostId": 42,
+  "userId": 1002,
+  "liked": true,
+  "likeCount": 5,
+  "serverTime": 1699999999000
+}
+```
+
+> **Note**: Set `"liked": false` in the same request to cancel a like. The update payload broadcasts the latest like count to all online members of the map post conversation (including the author).
+
 #### 5. Map Post Architecture
 
 When a Map Post is created:
@@ -750,4 +790,3 @@ docker-compose logs mysql
 # Restart MySQL service
 docker-compose restart mysql
 ```
-
