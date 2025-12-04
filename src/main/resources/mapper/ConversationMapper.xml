@@ -109,29 +109,32 @@
     <!-- 分页查询会话消息 -->
     <select id="getConversationMessages" resultType="com.example.knot_server.entity.Message">
         SELECT
-            msg_id,
-            conv_id,
-            sender_id,
-            msg_type,
-            client_msg_id,
-            content_text,
-            loc_lat,
-            loc_lng,
-            loc_name,
-            loc_accuracy_m,
-            geohash,
-            reply_to_msg_id,
-            media_url,
-            media_thumb_url,
-            media_meta_json,
-            msg_status,
-            created_at,
-            edited_at,
-            deleted_at
-        FROM messages
-        WHERE conv_id = #{convId}
-          AND msg_status != 2
-        ORDER BY created_at DESC
+            m.msg_id,
+            m.conv_id,
+            m.sender_id,
+            m.msg_type,
+            m.client_msg_id,
+            m.content_text,
+            m.loc_lat,
+            m.loc_lng,
+            m.loc_name,
+            m.loc_accuracy_m,
+            m.geohash,
+            m.reply_to_msg_id,
+            m.media_url,
+            m.media_thumb_url,
+            m.media_meta_json,
+            m.msg_status,
+            m.created_at,
+            m.edited_at,
+            m.deleted_at,
+            u.nickname AS sender_nickname,
+            u.avatar_url AS sender_avatar_url
+        FROM messages m
+        LEFT JOIN user u ON u.userid = m.sender_id
+        WHERE m.conv_id = #{convId}
+          AND m.msg_status != 2
+        ORDER BY m.created_at DESC
         LIMIT #{size} OFFSET #{offset}
     </select>
 

@@ -67,5 +67,16 @@ public class MapPostController {
     return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("帖子详情获取成功", mapPostDetail));
   }
 
+  // @PostMapping("/{mapPostId}/delete")
+  // public ResponseEntity<ApiResponse<Void>> deleteMapPost(
+  //   @PathVariable Long mapPostId,
+  //   Authentication auth
+  // ) {
+  //   JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+  //   Long currentUserId = principal.uid();
+  //   // mps.deleteMapPostByMapPostId(mapPostId, currentUserId);
+  //   return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("帖子删除成功", null));
+  // }
+
 }
 
