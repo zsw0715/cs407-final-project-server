@@ -13,4 +13,5 @@ public class MapPostLikeResult {
     private Integer likeCount;
     private Boolean liked;
     private List<Long> memberIds;
+    private String likerNickname;
 }

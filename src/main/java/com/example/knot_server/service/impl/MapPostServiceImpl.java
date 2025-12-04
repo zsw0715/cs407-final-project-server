@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.knot_server.controller.dto.MapPostDetailResponse;
@@ -621,6 +622,19 @@ public class MapPostServiceImpl implements MapPostService {
       throw new IllegalArgumentException("Map post not found");
     }
 
+    User liker = userMapper.selectById(userId);
+    String likerNickname = null;
+    if (liker != null) {
+      if (StringUtils.hasText(liker.getNickname())) {
+        likerNickname = liker.getNickname();
+      } else if (StringUtils.hasText(liker.getUsername())) {
+        likerNickname = liker.getUsername();
+      }
+    }
+    if (!StringUtils.hasText(likerNickname)) {
+      likerNickname = "用户" + userId;
+    }
+
     long memberCount = conversationMemberMapper.selectCount(
         new LambdaQueryWrapper<ConversationMember>()
             .eq(ConversationMember::getConvId, mapPost.getConvId())
@@ -664,7 +678,20 @@ public class MapPostServiceImpl implements MapPostService {
         .likeCount(likeCount)
         .liked(finalLiked)
         .memberIds(memberIds)
+        .likerNickname(likerNickname)
         .build();
+  }
+
+  @Override
+  public int getMapPostLikeCount(Long mapPostId) {
+    MapPost mapPost = mapPostMapper.selectById(mapPostId);
+    if (mapPost == null || mapPost.getStatus() == null || mapPost.getStatus() != 1) {
+      throw new IllegalArgumentException("Map post not found");
+    }
+
+    return Math.toIntExact(mapPostLikeMapper.selectCount(
+        new LambdaQueryWrapper<MapPostLike>()
+            .eq(MapPostLike::getMapPostId, mapPostId)));
   }
 
   private LambdaQueryWrapper<MapPostLike> userLikeQuery(Long mapPostId, Long userId) {

@@ -13,4 +13,5 @@ public class WsMapPostLikeAck {
     private Integer likeCount;
     private String clientReqId;
     private Long serverTime;
+    private String likerNickname;
 }

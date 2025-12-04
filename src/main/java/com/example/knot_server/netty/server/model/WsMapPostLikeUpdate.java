@@ -13,4 +13,5 @@ public class WsMapPostLikeUpdate {
     private Boolean liked;
     private Integer likeCount;
     private Long serverTime;
+    private String userNickname;
 }

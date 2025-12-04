@@ -58,6 +58,7 @@ public class MapPostLikeHandler extends SimpleChannelInboundHandler<TextWebSocke
       }
 
       MapPostLikeResult result = mapPostService.handleLikeAction(uid, req.getMapPostId(), req.getLiked());
+      String likerNickname = result.getLikerNickname();
 
       WsMapPostLikeAck ack = WsMapPostLikeAck.builder()
           .mapPostId(result.getMapPostId())
@@ -65,6 +66,7 @@ public class MapPostLikeHandler extends SimpleChannelInboundHandler<TextWebSocke
           .likeCount(result.getLikeCount())
           .clientReqId(req.getClientReqId())
           .serverTime(System.currentTimeMillis())
+          .likerNickname(likerNickname)
           .build();
       ctx.writeAndFlush(new TextWebSocketFrame(om.writeValueAsString(ack)));
 
@@ -74,6 +76,7 @@ public class MapPostLikeHandler extends SimpleChannelInboundHandler<TextWebSocke
           .liked(result.getLiked())
           .likeCount(result.getLikeCount())
           .serverTime(System.currentTimeMillis())
+          .userNickname(likerNickname)
           .build();
       String payload = om.writeValueAsString(update);
 

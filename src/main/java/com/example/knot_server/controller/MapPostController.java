@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 
 import com.example.knot_server.controller.dto.ApiResponse;
 import com.example.knot_server.controller.dto.MapPostDetailResponse;
+import com.example.knot_server.controller.dto.MapPostLikeCountResponse;
 import com.example.knot_server.controller.dto.NearbyPostRequest;
 import com.example.knot_server.controller.dto.NearbyPostRequestV2;
 import com.example.knot_server.controller.dto.NearbyPostResponse;
@@ -65,6 +66,23 @@ public class MapPostController {
     Long currentUserId = principal.uid();
     MapPostDetailResponse mapPostDetail = mps.getMapPostDetailByMapPostId(mapPostId, currentUserId);
     return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("帖子详情获取成功", mapPostDetail));
+  }
+
+  /**
+   * 获取帖子点赞数
+   */
+  @GetMapping("/{mapPostId}/likes/count")
+  public ResponseEntity<ApiResponse<MapPostLikeCountResponse>> getMapPostLikeCount(
+      @PathVariable Long mapPostId,
+      Authentication auth
+  ) {
+    // 确保已通过鉴权
+    ((JwtAuthFilter.SimplePrincipal) auth.getPrincipal()).uid();
+
+    int likeCount = mps.getMapPostLikeCount(mapPostId);
+    MapPostLikeCountResponse response = new MapPostLikeCountResponse(mapPostId, likeCount);
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(ApiResponse.success("帖子点赞数获取成功", response));
   }
 
   // @PostMapping("/{mapPostId}/delete")

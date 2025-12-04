@@ -55,4 +55,11 @@ public interface MapPostService {
      * @return 点赞结果（包含最新统计与广播成员）
      */
     MapPostLikeResult handleLikeAction(Long userId, Long mapPostId, boolean like);
+
+    /**
+     * 获取帖子点赞数
+     * @param mapPostId 帖子ID
+     * @return 点赞数量
+     */
+    int getMapPostLikeCount(Long mapPostId);
 }

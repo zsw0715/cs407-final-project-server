@@ -464,7 +464,8 @@ After a post is created and both users are members of the corresponding conversa
   "liked": true,
   "likeCount": 5,
   "clientReqId": "like-demo-001",
-  "serverTime": 1699999999000
+  "serverTime": 1699999999000,
+  "likerNickname": "Alice"
 }
 ```
 
@@ -476,6 +477,7 @@ After a post is created and both users are members of the corresponding conversa
   "userId": 1002,
   "liked": true,
   "likeCount": 5,
+  "userNickname": "Alice",
   "serverTime": 1699999999000
 }
 ```
