@@ -73,4 +73,11 @@ public class Message {
     @TableField("deleted_at")
     private LocalDateTime deletedAt;
 
+    // --- 非持久化字段：查询时附带发送者信息 ---
+    @TableField(exist = false)
+    private String senderNickname;
+
+    @TableField(exist = false)
+    private String senderAvatarUrl;
+
 }
