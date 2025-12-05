@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.core.Authentication;
 
 import com.example.knot_server.controller.dto.ApiResponse;
@@ -85,16 +86,20 @@ public class MapPostController {
         .body(ApiResponse.success("帖子点赞数获取成功", response));
   }
 
-  // @PostMapping("/{mapPostId}/delete")
-  // public ResponseEntity<ApiResponse<Void>> deleteMapPost(
-  //   @PathVariable Long mapPostId,
-  //   Authentication auth
-  // ) {
-  //   JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
-  //   Long currentUserId = principal.uid();
-  //   // mps.deleteMapPostByMapPostId(mapPostId, currentUserId);
-  //   return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("帖子删除成功", null));
-  // }
+  /**
+   * 根据 ID 删除帖子（仅作者可操作）
+   */
+  @DeleteMapping("/{mapPostId}")
+  public ResponseEntity<ApiResponse<Void>> deleteMapPost(
+      @PathVariable Long mapPostId,
+      Authentication auth
+  ) {
+    JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+    Long currentUserId = principal.uid();
+    mps.deleteMapPost(mapPostId, currentUserId);
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(ApiResponse.success("帖子删除成功", null));
+  }
 
 }
 

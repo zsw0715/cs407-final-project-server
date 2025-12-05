@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -692,6 +693,28 @@ public class MapPostServiceImpl implements MapPostService {
     return Math.toIntExact(mapPostLikeMapper.selectCount(
         new LambdaQueryWrapper<MapPostLike>()
             .eq(MapPostLike::getMapPostId, mapPostId)));
+  }
+
+  @Override
+  @Transactional(rollbackFor = Exception.class)
+  public void deleteMapPost(Long mapPostId, Long operatorId) {
+    MapPost mapPost = mapPostMapper.selectById(mapPostId);
+    if (mapPost == null) {
+      throw new IllegalArgumentException("帖子不存在");
+    }
+    if (!Objects.equals(mapPost.getCreatorId(), operatorId)) {
+      throw new IllegalArgumentException("无权删除该帖子");
+    }
+
+    Long convId = mapPost.getConvId();
+
+    // 删除帖子（触发 likes 等子表的 ON DELETE CASCADE）
+    mapPostMapper.deleteById(mapPostId);
+
+    // 同步删除对应的评论会话（会进一步清理 members/messages 等）
+    if (convId != null) {
+      conversationMapper.deleteById(convId);
+    }
   }
 
   private LambdaQueryWrapper<MapPostLike> userLikeQuery(Long mapPostId, Long userId) {

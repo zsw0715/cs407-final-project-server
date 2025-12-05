@@ -62,4 +62,11 @@ public interface MapPostService {
      * @return 点赞数量
      */
     int getMapPostLikeCount(Long mapPostId);
+
+    /**
+     * 根据 ID 删除地图帖子（同时清理关联数据）
+     * @param mapPostId 帖子ID
+     * @param operatorId 操作者（需要具备权限）
+     */
+    void deleteMapPost(Long mapPostId, Long operatorId);
 }
