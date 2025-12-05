@@ -14,11 +14,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.knot_server.controller.dto.ApiResponse;
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
 import com.example.knot_server.controller.dto.IdResponse;
+import com.example.knot_server.controller.dto.JoinGroupRequest;
+import com.example.knot_server.controller.dto.JoinGroupResponse;
+import com.example.knot_server.controller.dto.LeaveGroupRequest;
+import com.example.knot_server.controller.dto.LeaveGroupResponse;
 import com.example.knot_server.controller.dto.MessagePageResponse;
 import com.example.knot_server.service.ConversationService;
 import com.example.knot_server.util.JwtAuthFilter;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 @RestController
 @RequestMapping("/api/conversation")
@@ -89,4 +95,49 @@ public class ConversationController {
         MessagePageResponse messages = conversationService.getConversationMessages(conversationId, page, size);
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("会话消息获取成功", messages));
     }
+
+    /**
+     * 加入群聊会话 （把指定用户id加入群聊）
+     */
+    @PostMapping("/joinGroup")
+    public ResponseEntity<ApiResponse<JoinGroupResponse>> joinGroup(@RequestBody JoinGroupRequest request, Authentication auth) {
+        JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+        Long currentUserId = principal.uid();
+
+        // 检查当前用户是否是会话的成员，只有成员才能邀请其他人加入
+        boolean isMember = conversationService.isMember(request.getConversationId(), currentUserId);
+        if (!isMember) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("当前用户不是会话的成员，无法邀请其他人加入"));
+        }
+
+        conversationService.addUserToGroup(request.getConversationId(), request.getUserId());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success("用户成功加入群聊", new JoinGroupResponse(request.getConversationId(), request.getUserId())));
+    }
+
+    /**
+     * 退出群聊会话 （把指定用户id移除群聊）
+     */
+    @PostMapping("/leaveGroup")
+    public ResponseEntity<ApiResponse<LeaveGroupResponse>> leaveGroup(@RequestBody LeaveGroupRequest request, Authentication auth) {
+        JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+        Long currentUserId = principal.uid();
+
+        // 只能退出自己的账号
+        if (!currentUserId.equals(request.getUserId())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("只能操作当前登录用户退出群聊"));
+        }
+
+        boolean isMember = conversationService.isMember(request.getConversationId(), currentUserId);
+        if (!isMember) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("当前用户不是会话成员，无法退出"));
+        }
+
+        conversationService.removeUserFromGroup(request.getConversationId(), request.getUserId());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success("用户已退出群聊", new LeaveGroupResponse(request.getConversationId(), request.getUserId())));
+    }
+
 }

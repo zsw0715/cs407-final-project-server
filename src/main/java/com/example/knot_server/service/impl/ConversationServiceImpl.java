@@ -1,6 +1,7 @@
 package com.example.knot_server.service.impl;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -160,6 +161,42 @@ public class ConversationServiceImpl implements ConversationService {
                         .eq(ConversationMember::getConvId, conversationId)
                         .eq(ConversationMember::getUserId, userId)
                         .last("LIMIT 1")) > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addUserToGroup(Long conversationId, Long userId) {
+        // 1) 确认会话存在且为群聊
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        if (conversation == null) {
+            throw new IllegalArgumentException("会话不存在");
+        }
+        if (conversation.getConvType() != 2) {
+            throw new IllegalArgumentException("不是群聊会话");
+        }
+
+        // 2) 已在群里则直接返回
+        if (isMember(conversationId, userId)) {
+            return;
+        }
+
+        // 3) 插入群成员记录
+        ConversationMember member = new ConversationMember();
+        member.setConvId(conversationId);
+        member.setUserId(userId);
+        member.setConvRole(0);
+        member.setJoinedAt(LocalDateTime.now());
+        conversationMemberMapper.insert(member);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void removeUserFromGroup(Long conversationId, Long userId) {
+        conversationMemberMapper.delete(
+                new LambdaQueryWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConvId, conversationId)
+                        .eq(ConversationMember::getUserId, userId)
+                        .last("LIMIT 1"));
     }
 
 }

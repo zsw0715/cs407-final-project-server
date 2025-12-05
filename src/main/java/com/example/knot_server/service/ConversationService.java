@@ -34,4 +34,14 @@ public interface ConversationService {
      * 检查当前用户是否是会话的成员
      */
     boolean isMember(Long conversationId, Long userId);
+
+    /**
+     * 将用户添加到群聊会话
+     */
+    void addUserToGroup(Long conversationId, Long userId);
+
+    /**
+     * 将用户从群聊会话中移除
+     */
+    void removeUserFromGroup(Long conversationId, Long userId);
 }
