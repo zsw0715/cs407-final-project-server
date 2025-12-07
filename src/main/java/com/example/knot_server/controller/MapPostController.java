@@ -101,5 +101,20 @@ public class MapPostController {
         .body(ApiResponse.success("帖子删除成功", null));
   }
 
+  /**
+   * 根据 username 获得该用户发布的所有帖子
+   */
+  @GetMapping("/user/{username}")
+  public ResponseEntity<ApiResponse<List<NearbyPostResponse>>> getPostsByUsername(
+      @PathVariable String username,
+      Authentication auth
+  ) {
+    JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+    Long currentUserId = principal.uid();
+    List<NearbyPostResponse> userPosts = mps.getPostsByUsername(username, currentUserId);
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(ApiResponse.success("用户帖子获取成功", userPosts));
+  }
+
 }
 

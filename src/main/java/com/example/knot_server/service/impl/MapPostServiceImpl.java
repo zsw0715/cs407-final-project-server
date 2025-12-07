@@ -723,4 +723,35 @@ public class MapPostServiceImpl implements MapPostService {
         .eq(MapPostLike::getUserId, userId);
   }
 
+  @Override
+  public List<NearbyPostResponse> getPostsByUsername(String username, Long currentUserId) {
+    User user = userMapper.selectOne(
+        new LambdaQueryWrapper<User>()
+            .eq(User::getUsername, username)
+            .last("LIMIT 1"));
+    if (user == null) {
+      throw new IllegalArgumentException("用户不存在: " + username);
+    }
+
+    List<MapPost> posts = mapPostMapper.selectList(
+        new LambdaQueryWrapper<MapPost>()
+            .eq(MapPost::getCreatorId, user.getUserid())
+            .eq(MapPost::getStatus, 1) // 只查已发布的
+            .orderByDesc(MapPost::getCreatedAt));
+
+    List<NearbyPostResponse> results = posts.stream()
+        .filter(post -> {
+          // 权限检查：用户必须在conversation_members里
+          long count = conversationMemberMapper.selectCount(
+              new LambdaQueryWrapper<ConversationMember>()
+                  .eq(ConversationMember::getConvId, post.getConvId())
+                  .eq(ConversationMember::getUserId, currentUserId));
+          return count > 0;
+        })
+        .map(post -> buildResponse(post, 0.0, currentUserId)) // 距离设为0.0（不相关）
+        .collect(Collectors.toList());
+
+    return results;
+  }
+
 }

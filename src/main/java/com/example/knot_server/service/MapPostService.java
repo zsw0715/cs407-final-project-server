@@ -69,4 +69,9 @@ public interface MapPostService {
      * @param operatorId 操作者（需要具备权限）
      */
     void deleteMapPost(Long mapPostId, Long operatorId);
+
+    /**
+     * 根据 username，获得该用户发布的所有地图帖子
+     */
+    List<NearbyPostResponse> getPostsByUsername(String username, Long currentUserId);
 }
