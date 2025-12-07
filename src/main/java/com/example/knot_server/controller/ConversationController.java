@@ -19,6 +19,7 @@ import com.example.knot_server.controller.dto.JoinGroupResponse;
 import com.example.knot_server.controller.dto.LeaveGroupRequest;
 import com.example.knot_server.controller.dto.LeaveGroupResponse;
 import com.example.knot_server.controller.dto.MessagePageResponse;
+import com.example.knot_server.controller.dto.UserSettingsResponse;
 import com.example.knot_server.service.ConversationService;
 import com.example.knot_server.util.JwtAuthFilter;
 
@@ -138,6 +139,24 @@ public class ConversationController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success("用户已退出群聊", new LeaveGroupResponse(request.getConversationId(), request.getUserId())));
+    }
+
+    /**
+     * 获取群聊中所有的成员列表
+     */
+    @GetMapping("/members")
+    public ResponseEntity<ApiResponse<List<UserSettingsResponse>>> getGroupMembers(@RequestParam Long conversationId, Authentication auth) {
+        JwtAuthFilter.SimplePrincipal principal = (JwtAuthFilter.SimplePrincipal) auth.getPrincipal();
+        Long currentUserId = principal.uid();
+
+        // 检查当前用户是否是会话的成员
+        boolean isMember = conversationService.isMember(conversationId, currentUserId);
+        if (!isMember) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error("当前用户不是会话的成员"));
+        }
+
+        List<UserSettingsResponse> members = conversationService.listGroupMembers(conversationId);
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success("群成员列表获取成功", members));
     }
 
 }

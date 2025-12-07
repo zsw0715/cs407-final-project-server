@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
 import com.example.knot_server.controller.dto.MessagePageResponse;
+import com.example.knot_server.controller.dto.UserSettingsResponse;
 
 /**
  * 会话服务接口
@@ -44,4 +45,9 @@ public interface ConversationService {
      * 将用户从群聊会话中移除
      */
     void removeUserFromGroup(Long conversationId, Long userId);
+
+    /**
+     * 获取群聊中所有的成员列表
+     */
+    List<UserSettingsResponse> listGroupMembers(Long conversationId);
 }

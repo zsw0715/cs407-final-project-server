@@ -1,7 +1,8 @@
 package com.example.knot_server.service.impl;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import com.example.knot_server.controller.dto.ConversationSummaryResponse;
 import com.example.knot_server.controller.dto.MessagePageResponse;
+import com.example.knot_server.controller.dto.UserSettingsResponse;
 import com.example.knot_server.entity.Conversation;
 import com.example.knot_server.entity.ConversationMember;
 import com.example.knot_server.entity.Message;
@@ -17,6 +19,7 @@ import com.example.knot_server.entity.SingleConvIndex;
 import com.example.knot_server.mapper.ConversationMapper;
 import com.example.knot_server.mapper.ConversationMemberMapper;
 import com.example.knot_server.mapper.SingleConvIndexMapper;
+import com.example.knot_server.mapper.UserMapper;
 import com.example.knot_server.service.ConversationService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final ConversationMapper conversationMapper;
     private final ConversationMemberMapper conversationMemberMapper;
     private final SingleConvIndexMapper singleConvIndexMapper;
+    private final UserMapper userMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -197,6 +201,47 @@ public class ConversationServiceImpl implements ConversationService {
                         .eq(ConversationMember::getConvId, conversationId)
                         .eq(ConversationMember::getUserId, userId)
                         .last("LIMIT 1"));
+    }
+
+    /**
+     * 只能获取 convType == 1 or convType == 2 的会话成员列表
+     */
+    @Override
+    public List<UserSettingsResponse> listGroupMembers(Long conversationId) {
+        Conversation conversation = conversationMapper.selectById(conversationId);
+        if (conversation == null) {
+            throw new IllegalArgumentException("会话不存在");
+        }
+        if (conversation.getConvType() != 1 && conversation.getConvType() != 2) {
+            throw new IllegalArgumentException("不是单聊或群聊会话");
+        }
+
+        long[] userIds = conversationMemberMapper.selectList(
+                new LambdaQueryWrapper<ConversationMember>()
+                        .eq(ConversationMember::getConvId, conversationId))
+                .stream()
+                .map(ConversationMember::getUserId)
+                .mapToLong(Long::longValue)
+                .toArray();
+
+        if (userIds.length == 0) {
+            return List.of();
+        }
+
+        // 批量查询用户信息
+        List<Long> userIdList = java.util.Arrays.stream(userIds).boxed().collect(Collectors.toList());
+        return userMapper.selectBatchIds(userIdList).stream().map(user -> {
+            UserSettingsResponse resp = new UserSettingsResponse();
+            resp.setNickname(user.getNickname());
+            resp.setEmail(user.getEmail());
+            resp.setGender(user.getGender());
+            resp.setStatusMessage(user.getStatusMessage());
+            resp.setAvatarUrl(user.getAvatarUrl());
+            resp.setBirthdate(user.getBirthdate());
+            resp.setPrivacyLevel(user.getPrivacyLevel());
+            resp.setDiscoverable(user.getDiscoverable());
+            return resp;
+        }).toList();
     }
 
 }
